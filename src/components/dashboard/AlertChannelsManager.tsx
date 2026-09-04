@@ -104,33 +104,33 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
   return (
     <div className="space-y-8">
       <div>
-        <div className="eyebrow">Alerts</div>
-        <h1 className="font-display mt-1 text-3xl font-semibold text-white">Alert channels</h1>
-        <p className="mt-1 text-sm text-muted">Every warning and critical event (blacklisting, score drops ≥15, SPF/DKIM/DMARC changes) is dispatched to all active channels.</p>
+        <div className="eyebrow text-[#0F372E]">Alerts</div>
+        <h1 className="font-display mt-1 text-3xl font-bold text-[#0B1311]">Alert channels</h1>
+        <p className="mt-1 text-sm text-slate-600">Every warning and critical event (blacklisting, score drops ≥15, SPF/DKIM/DMARC changes) is dispatched to all active channels.</p>
       </div>
 
       {(!integrations.email || !integrations.whatsapp) && (
-        <div className="rounded-xl border border-gold/25 bg-gold/[0.05] px-4 py-3 text-xs text-gold-light">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-900">
           {!integrations.email && (
             <p>
-              <strong>Email</strong> delivery needs <code className="rounded bg-black/40 px-1">RESEND_API_KEY</code> on the server.
+              <strong>Email</strong> delivery needs <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">RESEND_API_KEY</code> on the server.
             </p>
           )}
           {!integrations.whatsapp && (
             <p className={!integrations.email ? "mt-1" : ""}>
-              <strong>WhatsApp</strong> delivery needs <code className="rounded bg-black/40 px-1">TWILIO_ACCOUNT_SID</code>, <code className="rounded bg-black/40 px-1">TWILIO_AUTH_TOKEN</code> and{" "}
-              <code className="rounded bg-black/40 px-1">TWILIO_WHATSAPP_NUMBER</code>.
+              <strong>WhatsApp</strong> delivery needs <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_ACCOUNT_SID</code>, <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_AUTH_TOKEN</code> and{" "}
+              <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_WHATSAPP_NUMBER</code>.
             </p>
           )}
-          <p className="mt-1 text-muted">Slack and generic webhooks work out of the box. Channels can be saved now and will deliver once keys are configured.</p>
+          <p className="mt-1 text-slate-600">Slack and generic webhooks work out of the box. Channels can be saved now and will deliver once keys are configured.</p>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         {/* add form */}
-        <SpotlightCard borderGlowColor="rgba(200, 169, 110, 0.5)" className="h-fit">
+        <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)" className="h-fit">
           <form onSubmit={add} className="p-5 sm:p-6">
-            <h2 className="font-display text-base font-semibold text-white">Add channel</h2>
+            <h2 className="font-display text-base font-bold text-[#0B1311]">Add channel</h2>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {(Object.keys(TYPE_META) as ChannelType[]).map((t) => {
                 const M = TYPE_META[t];
@@ -140,8 +140,8 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                     key={t}
                     type="button"
                     onClick={() => changeType(t)}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-xs transition ${
-                      active ? "border-gold/50 bg-gold/[0.1] text-gold-light" : "border-white/[0.08] bg-black/30 text-muted hover:text-white"
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-xs font-semibold transition ${
+                      active ? "border-[#0F372E] bg-emerald-50 text-[#0F372E] ring-1 ring-[#0F372E]" : "border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     }`}
                   >
                     <M.icon className="h-4 w-4" />
@@ -152,24 +152,24 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
             </div>
 
             <label className="mt-5 block">
-              <span className="mb-1.5 block text-xs text-muted">{meta.label} destination</span>
-              <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={meta.placeholder} className="input-dark" required spellCheck={false} autoComplete="off" />
-              <span className="mt-1.5 block text-[11px] text-muted-2">{meta.help}</span>
+              <span className="mb-1.5 block text-xs font-semibold text-slate-700">{meta.label} destination</span>
+              <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={meta.placeholder} className="input-domain" required spellCheck={false} autoComplete="off" />
+              <span className="mt-1.5 block text-[11px] text-slate-500">{meta.help}</span>
             </label>
 
             {type === "webhook" && (
               <label className="mt-4 block">
-                <span className="mb-1.5 block text-xs text-muted">Signing secret (optional)</span>
-                <input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="whsec_…" className="input-dark" autoComplete="off" />
-                <span className="mt-1.5 block text-[11px] text-muted-2">
+                <span className="mb-1.5 block text-xs font-semibold text-slate-700">Signing secret (optional)</span>
+                <input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="whsec_…" className="input-domain" autoComplete="off" />
+                <span className="mt-1.5 block text-[11px] text-slate-500">
                   We send <code>X-DeliverWatch-Signature: sha256=…</code> (HMAC of the raw body).
                 </span>
               </label>
             )}
 
-            {error && <p className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-3.5 py-2.5 text-sm text-red-200">{error}</p>}
+            {error && <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
 
-            <button type="submit" disabled={saving || !value.trim()} className="btn-gold mt-5 w-full">
+            <button type="submit" disabled={saving || !value.trim()} className="btn-primary mt-5 w-full">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Save channel
             </button>
           </form>
@@ -180,11 +180,11 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
           {channels.length === 0 ? (
             <SpotlightCard>
               <div className="p-10 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/30 bg-gold/[0.06]">
-                  <Bell className="h-6 w-6 text-gold-light" />
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
+                  <Bell className="h-6 w-6" />
                 </div>
-                <h3 className="font-display mt-4 text-lg font-semibold text-white">No channels configured</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Add at least one channel so you hear about blacklistings before your customers do.</p>
+                <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No channels configured</h3>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">Add at least one channel so you hear about blacklistings before your customers do.</p>
               </div>
             </SpotlightCard>
           ) : (
@@ -194,24 +194,24 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                 <SpotlightCard key={c.id}>
                   <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
                     <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${c.isActive ? "border-gold/30 bg-gold/[0.08] text-gold-light" : "border-white/[0.08] bg-black/30 text-muted-2"}`}>
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${c.isActive ? "border-emerald-200 bg-emerald-50 text-[#0F372E]" : "border-slate-200 bg-slate-50 text-slate-400"}`}>
                         <M.icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-white">{M.label}</span>
-                          <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] ${c.isActive ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-muted-2"}`}>
+                          <span className="font-bold text-slate-900">{M.label}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${c.isActive ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
                             {c.isActive ? "Active" : "Paused"}
                           </span>
                         </div>
-                        <div className="truncate text-xs text-muted" title={describe(c)}>
+                        <div className="truncate text-xs font-medium text-slate-600" title={describe(c)}>
                           {describe(c)}
                         </div>
-                        {testMsg[c.id] && <div className="mt-1 text-[11px] text-gold-light">{testMsg[c.id]}</div>}
+                        {testMsg[c.id] && <div className="mt-1 text-[11px] font-semibold text-emerald-700">{testMsg[c.id]}</div>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                      <button type="button" onClick={() => test(c)} disabled={busy === c.id} className="btn-ghost !px-3 !py-1.5 text-xs">
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <button type="button" onClick={() => test(c)} disabled={busy === c.id} className="btn-secondary !h-8 !px-3 text-xs">
                         <Send className="h-3.5 w-3.5" /> Test
                       </button>
                       <button
@@ -220,12 +220,12 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                         disabled={busy === c.id}
                         role="switch"
                         aria-checked={c.isActive}
-                        className={`relative h-6 w-11 rounded-full border transition ${c.isActive ? "border-gold/50 bg-gold/40" : "border-white/10 bg-white/[0.06]"}`}
+                        className={`relative h-6 w-11 rounded-full border transition ${c.isActive ? "border-[#0F372E] bg-[#0F372E]" : "border-slate-300 bg-slate-200"}`}
                         aria-label="Toggle channel"
                       >
-                        <span className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white transition-all ${c.isActive ? "left-[22px]" : "left-0.5"}`} />
+                        <span className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-sm transition-all ${c.isActive ? "left-[22px]" : "left-0.5"}`} />
                       </button>
-                      <button type="button" onClick={() => remove(c)} disabled={busy === c.id} className="rounded-lg p-2 text-muted-2 transition hover:bg-red-400/10 hover:text-red-300" aria-label="Delete channel">
+                      <button type="button" onClick={() => remove(c)} disabled={busy === c.id} className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600" aria-label="Delete channel">
                         {busy === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </button>
                     </div>

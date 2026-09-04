@@ -102,11 +102,11 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
       {/* header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="eyebrow">Overview</div>
-          <h1 className="font-display mt-1 text-3xl font-semibold text-white">Monitored domains</h1>
-          <p className="mt-1 text-sm text-muted">Re-checked automatically every 15 minutes. Alerts fire on any warning or critical change.</p>
+          <div className="eyebrow text-[#0F372E]">Overview</div>
+          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[#0B1311]">Monitored domains</h1>
+          <p className="mt-1 text-sm text-slate-600">Re-checked automatically every 15 minutes. Alerts fire on any warning or critical change.</p>
         </div>
-        <button type="button" onClick={() => setShowForm((s) => !s)} className="btn-gold self-start sm:self-auto">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="btn-primary self-start sm:self-auto">
           <Plus className="h-4 w-4" /> Add Domain
         </button>
       </div>
@@ -126,13 +126,13 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
           label="Active alerts (7d)"
           value={String(stats.activeAlerts)}
           hint={stats.activeAlerts ? "Warning or critical events" : "All quiet"}
-          valueColor={stats.activeAlerts ? "#FBBF24" : "#4ADE80"}
+          valueColor={stats.activeAlerts ? "#F59E0B" : "#10B981"}
         />
       </div>
 
       {/* add form */}
       {showForm && (
-        <SpotlightCard borderGlowColor="rgba(200, 169, 110, 0.5)">
+        <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)">
           <form onSubmit={addDomain} className="p-5 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
@@ -140,33 +140,35 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Add a domain to monitor, e.g. yourcompany.com"
-                className="input-dark flex-1"
+                className="input-domain flex-1"
                 disabled={adding}
                 spellCheck={false}
                 autoComplete="off"
               />
-              <button type="submit" disabled={adding || !input.trim()} className="btn-gold min-w-[170px]">
+              <button type="submit" disabled={adding || !input.trim()} className="btn-primary min-w-[170px]">
                 {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                 {adding ? "Scanning…" : "Add & Scan"}
               </button>
             </div>
             {adding && (
               <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-muted">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
                   <span className="inline-flex items-center gap-2">
-                    <span className="pulse-ring relative inline-block h-2 w-2 rounded-full bg-gold text-gold" />
+                    <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-500">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    </span>
                     {SCAN_STEPS[step]}…
                   </span>
                   <span>
                     {step + 1}/{SCAN_STEPS.length}
                   </span>
                 </div>
-                <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.06]">
-                  <div className="h-full bg-gradient-to-r from-gold-light via-gold to-gold-deep transition-all duration-500" style={{ width: `${((step + 1) / SCAN_STEPS.length) * 100}%` }} />
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full bg-gradient-to-r from-[#0F372E] via-[#10B981] to-[#34D399] transition-all duration-500" style={{ width: `${((step + 1) / SCAN_STEPS.length) * 100}%` }} />
                 </div>
               </div>
             )}
-            {error && <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-3.5 py-2.5 text-sm text-red-200">{error}</p>}
+            {error && <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
           </form>
         </SpotlightCard>
       )}
@@ -177,11 +179,11 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
           {list.length === 0 ? (
             <SpotlightCard>
               <div className="p-10 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/30 bg-gold/[0.06]">
-                  <Globe className="h-6 w-6 text-gold-light" />
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
+                  <Globe className="h-6 w-6" />
                 </div>
-                <h3 className="font-display mt-4 text-lg font-semibold text-white">No domains yet</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Add your first domain to start monitoring. We&apos;ll run a baseline scan immediately.</p>
+                <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No domains yet</h3>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">Add your first domain to start monitoring. We&apos;ll run a baseline scan immediately.</p>
               </div>
             </SpotlightCard>
           ) : (
@@ -191,32 +193,32 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
                 <SpotlightCard key={d.id}>
                   <div className="flex items-center gap-4 p-4 sm:p-5">
                     <Link href={`/dashboard/${d.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-black/40 font-display text-lg font-semibold" style={{ color }}>
+                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 font-display text-lg font-bold" style={{ color }}>
                         {d.latestScore}
-                        <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[#0B0D12]" style={{ background: d.isActive ? color : "#555" }} />
+                        <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ background: d.isActive ? color : "#94A3B8" }} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate font-medium text-white">{d.domain}</span>
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color, background: `${color}1a`, border: `1px solid ${color}44` }}>
+                          <span className="truncate font-bold text-slate-900">{d.domain}</span>
+                          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color, background: `${color}15`, border: `1px solid ${color}33` }}>
                             {scoreLabel(d.latestScore)}
                           </span>
-                          {!d.isActive && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-2">Paused</span>}
+                          {!d.isActive && <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] uppercase font-semibold text-slate-500">Paused</span>}
                         </div>
-                        <div className="mt-1 text-xs text-muted-2">
+                        <div className="mt-1 text-xs text-slate-500">
                           {d.lastCheckedAt ? `Checked ${formatDistanceToNow(new Date(d.lastCheckedAt), { addSuffix: true })}` : "Not checked yet"}
                         </div>
-                        <div className="mt-2 h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/[0.06]">
+                        <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-100">
                           <div className="h-full rounded-full" style={{ width: `${d.latestScore}%`, background: color }} />
                         </div>
                       </div>
-                      <ArrowRight className="hidden h-4 w-4 shrink-0 text-muted-2 sm:block" />
+                      <ArrowRight className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" />
                     </Link>
                     <button
                       type="button"
                       onClick={() => remove(d.id, d.domain)}
                       disabled={deleting === d.id}
-                      className="rounded-lg p-2 text-muted-2 transition hover:bg-red-400/10 hover:text-red-300"
+                      className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
                       aria-label={`Remove ${d.domain}`}
                     >
                       {deleting === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -231,21 +233,21 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
         {/* recent activity */}
         <SpotlightCard className="h-fit">
           <div className="p-5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-base font-semibold text-white">Recent activity</h3>
-              <span className="text-xs text-muted-2">Last 7 days</span>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-display text-base font-bold text-[#0B1311]">Recent activity</h3>
+              <span className="text-xs font-semibold text-slate-400">Last 7 days</span>
             </div>
             {recentEvents.length === 0 ? (
-              <p className="mt-4 text-sm text-muted">No events yet. Activity will appear here as we detect changes.</p>
+              <p className="mt-4 text-sm text-slate-500">No events yet. Activity will appear here as we detect changes.</p>
             ) : (
               <ul className="mt-4 space-y-3">
                 {recentEvents.map((e) => (
                   <li key={e.id}>
-                    <Link href={`/dashboard/${e.domainId}`} className="flex gap-3 rounded-lg p-1 transition hover:bg-white/[0.03]">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: severityColor(e.severity), boxShadow: `0 0 8px ${severityColor(e.severity)}` }} />
+                    <Link href={`/dashboard/${e.domainId}`} className="flex gap-3 rounded-lg p-1.5 transition hover:bg-slate-50">
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: severityColor(e.severity) }} />
                       <div className="min-w-0">
-                        <div className="truncate text-sm text-white/90">{e.title}</div>
-                        <div className="text-xs text-muted-2">
+                        <div className="truncate text-sm font-medium text-slate-800">{e.title}</div>
+                        <div className="text-xs text-slate-400">
                           {e.domain} · {formatDistanceToNow(new Date(e.createdAt), { addSuffix: true })}
                         </div>
                       </div>
@@ -266,14 +268,14 @@ function StatCard({ icon: Icon, label, value, hint, valueColor }: { icon: typeof
     <SpotlightCard>
       <div className="flex items-start justify-between p-5">
         <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-2">{label}</div>
-          <div className="font-display mt-2 text-3xl font-semibold text-white" style={valueColor ? { color: valueColor } : undefined}>
+          <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">{label}</div>
+          <div className="font-display mt-2 text-3xl font-extrabold text-[#0B1311]" style={valueColor ? { color: valueColor } : undefined}>
             {value}
           </div>
-          <div className="mt-1 text-xs text-muted">{hint}</div>
+          <div className="mt-1 text-xs text-slate-500 font-medium">{hint}</div>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/25 bg-gold/[0.06]">
-          <Icon className="h-4.5 w-4.5 text-gold-light" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
+          <Icon className="h-5 w-5" />
         </div>
       </div>
     </SpotlightCard>

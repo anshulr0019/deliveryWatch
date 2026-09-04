@@ -27,39 +27,39 @@ export function ScoreGauge({ score, size = 200, strokeWidth = 12, grade, subtitl
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <defs>
-          <linearGradient id="gauge-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#E8D2A2" />
-            <stop offset="50%" stopColor="#C8A96E" />
-            <stop offset="100%" stopColor="#967840" />
+          <linearGradient id="gauge-pine" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#0F372E" />
+            <stop offset="50%" stopColor="#10B981" />
+            <stop offset="100%" stopColor="#34D399" />
           </linearGradient>
         </defs>
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="#F1F5F9" strokeWidth={strokeWidth} fill="none" />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={score >= 85 ? "url(#gauge-gold)" : color}
+          stroke={score >= 85 ? "url(#gauge-pine)" : color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           fill="none"
           strokeDasharray={c}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.2, 0.7, 0.2, 1)", filter: `drop-shadow(0 0 10px ${color}66)` }}
+          style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.2, 0.7, 0.2, 1)", filter: `drop-shadow(0 2px 8px ${color}33)` }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="font-display text-5xl font-semibold leading-none tracking-tight" style={{ color, fontSize: size * 0.26 }}>
+        <div className="font-display font-bold leading-none tracking-tight text-[#0B1311]" style={{ fontSize: size * 0.26 }}>
           {score}
         </div>
-        <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-2" style={{ fontSize: Math.max(9, size * 0.055) }}>
+        <div className="mt-1 font-semibold uppercase tracking-[0.2em] text-slate-400" style={{ fontSize: Math.max(9, size * 0.055) }}>
           {grade ? `Grade ${grade}` : "/ 100"}
         </div>
         {subtitle !== undefined ? (
-          <div className="mt-1 text-xs text-muted" style={{ fontSize: Math.max(10, size * 0.06) }}>
+          <div className="mt-1 font-medium text-slate-600" style={{ fontSize: Math.max(10, size * 0.06) }}>
             {subtitle}
           </div>
         ) : (
-          <div className="mt-1 text-xs text-muted" style={{ fontSize: Math.max(10, size * 0.06) }}>
+          <div className="mt-1 font-medium text-slate-600" style={{ fontSize: Math.max(10, size * 0.06) }}>
             {scoreLabel(score)}
           </div>
         )}

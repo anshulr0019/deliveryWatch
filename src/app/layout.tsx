@@ -5,7 +5,6 @@ import "@/app/globals.css";
 import { SmoothScroll } from "@/components/mailscore/SmoothScroll";
 import { FilmGrain } from "@/components/mailscore/FilmGrain";
 import { LiveBackground } from "@/components/mailscore/LiveBackground";
-import { CursorGlow } from "@/components/mailscore/CursorGlow";
 import { ScrollProgress } from "@/components/mailscore/ScrollProgress";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -25,21 +24,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${grotesk.variable}`}>
-      <body className="relative min-h-screen bg-[#060709] text-slate-200 antialiased overflow-x-hidden selection:bg-[#C8A96E]/30 selection:text-white">
+    <html lang="en" className={`light ${inter.variable} ${grotesk.variable}`}>
+      <body className="relative min-h-screen bg-white text-slate-800 antialiased overflow-x-hidden selection:bg-emerald-100 selection:text-[#0F372E]">
         {/* Momentum smooth scrolling */}
         <SmoothScroll />
 
-        {/* Tactile micro-noise film grain */}
-        <FilmGrain />
-
-        {/* Interactive parallax ambient background */}
+        {/* Interactive light ambient mesh background */}
         <LiveBackground />
 
-        {/* Cursor flashlight glow */}
-        <CursorGlow />
-
-        {/* Top gold reading progress line */}
+        {/* Top pine/emerald reading progress line */}
         <ScrollProgress />
 
         {/* Page Content */}

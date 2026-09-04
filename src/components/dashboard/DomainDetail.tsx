@@ -104,48 +104,48 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
 
   return (
     <div className="space-y-8">
-      <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-white">
-        <ArrowLeft className="h-4 w-4" /> Dashboard
+      <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-[#0F372E]">
+        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </Link>
 
       {/* hero */}
-      <SpotlightCard borderGlowColor="rgba(200, 169, 110, 0.5)" innerClassName="p-6 sm:p-8">
+      <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)" innerClassName="p-6 sm:p-8">
         <div className="grid items-center gap-8 lg:grid-cols-[auto_1fr_auto]">
           <div className="flex justify-center">
             <ScoreGauge score={domain.latestScore} grade={latestResult?.grade} size={190} />
           </div>
           <div className="min-w-0 text-center lg:text-left">
-            <div className="eyebrow">Monitored domain</div>
-            <h1 className="font-display mt-1 break-all text-3xl font-semibold text-white sm:text-4xl">{domain.domain}</h1>
+            <div className="eyebrow text-[#0F372E]">Monitored domain</div>
+            <h1 className="font-display mt-1 break-all text-3xl font-bold text-[#0B1311] sm:text-4xl">{domain.domain}</h1>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-              <span className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color, background: `${color}1a`, border: `1px solid ${color}44` }}>
+              <span className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color, background: `${color}15`, border: `1px solid ${color}33` }}>
                 {scoreLabel(domain.latestScore)}
               </span>
-              <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${domain.isActive ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-muted-2"}`}>
+              <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${domain.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
                 {domain.isActive ? "Monitoring · every 15 min" : "Paused"}
               </span>
             </div>
-            <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted">
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-500">
               <Clock className="h-3.5 w-3.5" />
               {domain.lastCheckedAt ? `Last checked ${formatDistanceToNow(new Date(domain.lastCheckedAt), { addSuffix: true })}` : "Not checked yet"} · Monitoring since{" "}
               {format(new Date(domain.createdAt), "MMM d, yyyy")}
             </p>
             {flash && (
-              <p className={`mt-3 rounded-xl border px-3.5 py-2 text-sm ${flash.kind === "ok" ? "border-gold/30 bg-gold/[0.06] text-gold-light" : "border-red-400/30 bg-red-400/10 text-red-200"}`}>
+              <p className={`mt-3 rounded-xl border px-3.5 py-2 text-sm font-semibold ${flash.kind === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
                 {flash.text}
               </p>
             )}
           </div>
           <div className="flex flex-row flex-wrap justify-center gap-2.5 lg:flex-col">
-            <button type="button" onClick={recheck} disabled={rechecking} className="btn-gold">
+            <button type="button" onClick={recheck} disabled={rechecking} className="btn-primary">
               {rechecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               {rechecking ? "Checking…" : "Re-check Now"}
             </button>
-            <button type="button" onClick={toggleActive} disabled={toggling} className="btn-ghost">
+            <button type="button" onClick={toggleActive} disabled={toggling} className="btn-secondary">
               {domain.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {domain.isActive ? "Pause" : "Resume"}
             </button>
-            <button type="button" onClick={remove} disabled={deleting} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/15 hover:border-red-500/40">
+            <button type="button" onClick={remove} disabled={deleting} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100">
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Remove
             </button>
           </div>
@@ -161,10 +161,10 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
       <section>
         <div className="mb-4 flex items-end justify-between">
           <div>
-            <div className="eyebrow">Protocol breakdown</div>
-            <h2 className="font-display mt-1 text-xl font-semibold text-white">Latest snapshot</h2>
+            <div className="eyebrow text-[#0F372E]">Protocol breakdown</div>
+            <h2 className="font-display mt-1 text-xl font-bold text-[#0B1311]">Latest snapshot</h2>
           </div>
-          {latestResult && <span className="text-xs text-muted-2">{format(new Date(latestResult.scannedAt), "PPpp")}</span>}
+          {latestResult && <span className="text-xs text-slate-400">{format(new Date(latestResult.scannedAt), "PPpp")}</span>}
         </div>
 
         {latestResult ? (
@@ -230,7 +230,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
             />
           </div>
         ) : (
-          <SpotlightCard innerClassName="p-8 text-center text-sm text-muted">
+          <SpotlightCard innerClassName="p-8 text-center text-sm text-slate-500">
             No check data has been recorded for this domain yet. Click &ldquo;Re-check Now&rdquo; to trigger the first scan.
           </SpotlightCard>
         )}
@@ -238,11 +238,11 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
 
       {/* change events log */}
       <section>
-        <div className="eyebrow">Audit log</div>
-        <h2 className="font-display mt-1 text-xl font-semibold text-white">Recent events & alerts</h2>
+        <div className="eyebrow text-[#0F372E]">Audit log</div>
+        <h2 className="font-display mt-1 text-xl font-bold text-[#0B1311]">Recent events & alerts</h2>
         <div className="mt-4">
           {events.length === 0 ? (
-            <SpotlightCard innerClassName="p-8 text-center text-sm text-muted">
+            <SpotlightCard innerClassName="p-8 text-center text-sm text-slate-500">
               No change events or alerts recorded for this domain yet. We will notify you when records shift.
             </SpotlightCard>
           ) : (
@@ -251,7 +251,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
                 <SpotlightCard key={e.id} innerClassName="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                         e.severity === "critical"
                           ? "badge-fail"
                           : e.severity === "warning"
@@ -262,11 +262,11 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
                       {e.severity}
                     </span>
                     <div>
-                      <div className="text-sm font-medium text-white">{e.title}</div>
-                      {e.description && <div className="text-xs text-muted mt-0.5">{e.description}</div>}
+                      <div className="text-sm font-semibold text-slate-900">{e.title}</div>
+                      {e.description && <div className="text-xs text-slate-500 mt-0.5">{e.description}</div>}
                     </div>
                   </div>
-                  <span className="text-xs text-muted-2 shrink-0">{format(new Date(e.createdAt), "PPp")}</span>
+                  <span className="text-xs text-slate-400 shrink-0">{format(new Date(e.createdAt), "PPp")}</span>
                 </SpotlightCard>
               ))}
             </div>
