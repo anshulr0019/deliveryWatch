@@ -4,19 +4,19 @@ import { Logo } from "./Logo";
 
 export function Header({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-obsidian/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#060709]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted md:flex">
-          <a href="#features" className="transition hover:text-white">
+          <Link href="/#features" className="transition hover:text-white">
             Features
-          </a>
-          <a href="#check" className="transition hover:text-white">
+          </Link>
+          <Link href="/#check" className="transition hover:text-white">
             Instant Checker
-          </a>
-          <a href="#how" className="transition hover:text-white">
+          </Link>
+          <Link href="/#how" className="transition hover:text-white">
             How it works
-          </a>
+          </Link>
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (

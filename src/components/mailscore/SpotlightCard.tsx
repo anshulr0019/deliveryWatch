@@ -48,7 +48,9 @@ export function SpotlightCard({
         aria-hidden="true"
       />
       {/* Inner card surface */}
-      <div className={`relative h-full rounded-[calc(1rem-1px)] bg-[#0B0D12]/95 p-5 backdrop-blur-xl transition-all duration-300 ${innerClassName}`}>
+      <div
+        className={`relative h-full rounded-[calc(1rem-1px)] bg-[#0B0D12]/95 backdrop-blur-xl transition-all duration-300 ${innerClassName}`}
+      >
         <div
           className="pointer-events-none absolute inset-0 rounded-[calc(1rem-1px)] transition-opacity duration-500 ease-out"
           style={{
@@ -57,7 +59,7 @@ export function SpotlightCard({
           }}
           aria-hidden="true"
         />
-        <div className="relative z-10">{children}</div>
+        <div className="relative z-10 h-full">{children}</div>
       </div>
     </div>
   );

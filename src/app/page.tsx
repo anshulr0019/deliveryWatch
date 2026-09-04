@@ -4,6 +4,7 @@ import { Header } from "@/components/mailscore/Header";
 import { Footer } from "@/components/mailscore/Footer";
 import { ScannerHero } from "@/components/mailscore/ScannerHero";
 import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
+import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/mailscore/ScrollReveal";
 import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export default async function HomePage() {
               DeliverWatch runs real DNS checks on your SPF, DKIM, DMARC, MX and 8 blacklists around the clock, keeps a history of every change, and alerts you on WhatsApp, Slack
               or email the second something breaks.
             </p>
-            <div className="fade-up mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" style={{ animationDelay: "240ms" }}>
+            <div className="fade-up mt-9 flex flex-col items-center justify-center gap-3.5 sm:flex-row" style={{ animationDelay: "240ms" }}>
               <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold w-full sm:w-auto">
                 {isAuthenticated ? "Open Dashboard" : "Start Monitoring Free"} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -79,10 +80,10 @@ export default async function HomePage() {
               </a>
             </div>
             <div className="fade-up mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-2" style={{ animationDelay: "320ms" }}>
-              <span>✓ No credit card</span>
-              <span>✓ Unlimited domains</span>
-              <span>✓ Re-checks every 15 min</span>
-              <span>✓ Open DNS engine</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> No credit card</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Unlimited domains</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Re-checks every 15 min</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Open DNS engine</span>
             </div>
           </div>
         </section>
@@ -92,30 +93,33 @@ export default async function HomePage() {
 
         {/* FEATURES */}
         <section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-28 sm:px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="eyebrow">Everything MailScore did — now on autopilot</div>
-            <h2 className="font-display mt-3 text-3xl font-semibold text-white sm:text-4xl">Monitoring built for people who send email that matters</h2>
-            <p className="mt-4 text-muted">One-off checks tell you where you were. DeliverWatch tells you the moment things change.</p>
-          </div>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollReveal direction="up">
+            <div className="mx-auto max-w-2xl text-center">
+              <div className="eyebrow">Everything MailScore did — now on autopilot</div>
+              <h2 className="font-display mt-3 text-3xl font-semibold text-white sm:text-4xl">Monitoring built for people who send email that matters</h2>
+              <p className="mt-4 text-muted">One-off checks tell you where you were. DeliverWatch tells you the moment things change.</p>
+            </div>
+          </ScrollReveal>
+
+          <StaggerContainer className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.08}>
             {FEATURES.map((f) => (
-              <SpotlightCard key={f.title} className="h-full">
-                <div className="p-6">
+              <StaggerItem key={f.title} className="h-full">
+                <SpotlightCard className="h-full" innerClassName="p-6">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/30 bg-gradient-to-br from-gold/15 to-transparent">
                     <f.icon className="h-5 w-5 text-gold-light" />
                   </div>
                   <h3 className="font-display mt-5 text-lg font-semibold text-white">{f.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{f.body}</p>
-                </div>
-              </SpotlightCard>
+                </SpotlightCard>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </section>
 
         {/* HOW IT WORKS */}
         <section id="how" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-28 sm:px-6">
-          <SpotlightCard className="p-1" borderGlowColor="rgba(200, 169, 110, 0.35)">
-            <div className="rounded-[14px] bg-[#0B0D12]/80 p-8 sm:p-12">
+          <ScrollReveal direction="up">
+            <SpotlightCard borderGlowColor="rgba(200, 169, 110, 0.35)" innerClassName="p-8 sm:p-12">
               <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-center">
                 <div>
                   <div className="eyebrow">How it works</div>
@@ -129,7 +133,7 @@ export default async function HomePage() {
                 </div>
                 <ol className="space-y-4">
                   {STEPS.map((s) => (
-                    <li key={s.n} className="flex gap-5 rounded-2xl border border-white/[0.06] bg-black/30 p-5">
+                    <li key={s.n} className="flex gap-5 rounded-2xl border border-white/[0.06] bg-black/40 p-5 transition-colors duration-200 hover:border-gold/30">
                       <span className="font-display text-2xl font-semibold text-gold-gradient">{s.n}</span>
                       <div>
                         <div className="font-medium text-white">{s.title}</div>
@@ -139,20 +143,22 @@ export default async function HomePage() {
                   ))}
                 </ol>
               </div>
-            </div>
-          </SpotlightCard>
+            </SpotlightCard>
+          </ScrollReveal>
         </section>
 
         {/* FINAL CTA */}
         <section className="mx-auto max-w-6xl px-4 pt-28 sm:px-6">
-          <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-[radial-gradient(ellipse_at_top,rgba(200,169,110,0.18),transparent_60%),linear-gradient(180deg,#12151C,#0B0D12)] px-6 py-16 text-center sm:px-12">
-            <div className="eyebrow">Free. Forever. Seriously.</div>
-            <h2 className="font-display mx-auto mt-3 max-w-2xl text-3xl font-semibold text-white sm:text-5xl">Stop finding out from your customers.</h2>
-            <p className="mx-auto mt-4 max-w-xl text-muted">Add your first domain in under a minute. Get your first alert before your next campaign lands in spam.</p>
-            <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold mt-8">
-              Start Monitoring Free <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          <ScrollReveal direction="scale">
+            <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-[radial-gradient(ellipse_at_top,rgba(200,169,110,0.18),transparent_60%),linear-gradient(180deg,#12151C,#0B0D12)] px-6 py-16 text-center sm:px-12">
+              <div className="eyebrow">Free. Forever. Seriously.</div>
+              <h2 className="font-display mx-auto mt-3 max-w-2xl text-3xl font-semibold text-white sm:text-5xl">Stop finding out from your customers.</h2>
+              <p className="mx-auto mt-4 max-w-xl text-muted">Add your first domain in under a minute. Get your first alert before your next campaign lands in spam.</p>
+              <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold mt-8">
+                Start Monitoring Free <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </ScrollReveal>
         </section>
       </main>
 
