@@ -43,7 +43,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
     <section id="check" className="relative mx-auto w-full max-w-6xl scroll-mt-24 px-4 sm:px-6">
       <SpotlightCard borderGlowColor="rgba(200, 169, 110, 0.5)" innerClassName="p-6 sm:p-10">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="eyebrow mb-3 inline-flex items-center gap-2">
+          <div className="eyebrow mb-3 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/[0.06] px-3.5 py-1 text-gold-light">
             <Radar className="h-3.5 w-3.5" /> Instant Checker · No login needed
           </div>
           <h2 className="font-display text-3xl font-semibold text-white sm:text-4xl">
@@ -52,7 +52,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
           <p className="mt-3 text-sm text-muted sm:text-base">Live DNS checks for SPF, DKIM, DMARC, MX and 8 real-time blacklists. Nothing is stored.</p>
         </div>
 
-        <form onSubmit={onSubmit} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
+        <form onSubmit={onSubmit} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" />
             <input
@@ -62,13 +62,14 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
               autoComplete="off"
               spellCheck={false}
               inputMode="url"
-              className="input-dark pl-11"
+              className="input-dark !pl-12"
               aria-label="Domain to check"
             />
           </div>
-          <button type="submit" disabled={loading || !domain.trim()} className="btn-gold min-w-[150px]">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-            {loading ? "Scanning…" : "Check Domain"}
+          <button type="submit" disabled={loading || !domain.trim()} className="btn-gold group min-w-[160px]">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            <span>{loading ? "Scanning…" : "Check Domain"}</span>
+            {!loading && <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
           </button>
         </form>
 
@@ -104,14 +105,16 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
                   <span className="text-white font-medium">{result.tier}</span> · Estimated inbox placement <span className="text-gold-light font-semibold">{result.inboxProbability}%</span> · Scanned in{" "}
                   {(result.scanDurationMs / 1000).toFixed(1)}s
                 </p>
-                <div className="mt-5 flex flex-wrap gap-3">
+                <div className="mt-5 flex flex-wrap items-center gap-3">
                   {isAuthenticated ? (
-                    <Link href={`/dashboard?add=${encodeURIComponent(result.domain)}`} className="btn-gold">
-                      Monitor {result.domain} 24/7 <ArrowRight className="h-4 w-4" />
+                    <Link href={`/dashboard?add=${encodeURIComponent(result.domain)}`} className="btn-gold group">
+                      <span>Monitor {result.domain} 24/7</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                     </Link>
                   ) : (
-                    <Link href={`/login?next=${encodeURIComponent(`/dashboard?add=${result.domain}`)}`} className="btn-gold">
-                      Monitor this domain free <ArrowRight className="h-4 w-4" />
+                    <Link href={`/login?next=${encodeURIComponent(`/dashboard?add=${result.domain}`)}`} className="btn-gold group">
+                      <span>Monitor this domain free</span>
+                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                     </Link>
                   )}
                   <button type="button" onClick={() => setResult(null)} className="btn-ghost">

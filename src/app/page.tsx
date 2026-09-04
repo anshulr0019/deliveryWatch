@@ -59,31 +59,43 @@ export default async function HomePage() {
       <main className="relative">
         {/* HERO */}
         <section className="relative mx-auto max-w-6xl px-4 pb-16 pt-20 sm:px-6 sm:pt-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="fade-up mx-auto inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/[0.06] px-4 py-1.5 text-xs text-gold-light">
-              <Sparkles className="h-3.5 w-3.5" />
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="fade-up mx-auto inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/[0.08] px-4 py-1.5 text-xs font-medium text-gold-light shadow-[0_0_20px_rgba(200,169,110,0.15)]">
+              <Sparkles className="h-3.5 w-3.5 text-gold-light" />
               Continuous Deliverability & Blacklist Monitoring — 100% Free
             </div>
-            <h1 className="font-display fade-up mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl" style={{ animationDelay: "80ms" }}>
-              Your domains are getting blacklisted. <span className="text-gold-gradient">You just don&apos;t know it yet.</span>
+
+            <h1 className="font-display fade-up mt-7 text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-6xl sm:leading-[1.08]" style={{ animationDelay: "80ms" }}>
+              Your domains are getting blacklisted. <br className="hidden sm:inline" />
+              <span className="text-gold-gradient">You just don&apos;t know it yet.</span>
             </h1>
-            <p className="fade-up mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted sm:text-lg" style={{ animationDelay: "160ms" }}>
+
+            <p className="fade-up mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg" style={{ animationDelay: "160ms" }}>
               DeliverWatch runs real DNS checks on your SPF, DKIM, DMARC, MX and 8 blacklists around the clock, keeps a history of every change, and alerts you on WhatsApp, Slack
               or email the second something breaks.
             </p>
+
             <div className="fade-up mt-9 flex flex-col items-center justify-center gap-3.5 sm:flex-row" style={{ animationDelay: "240ms" }}>
-              <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold w-full sm:w-auto">
-                {isAuthenticated ? "Open Dashboard" : "Start Monitoring Free"} <ArrowRight className="h-4 w-4" />
+              <Link
+                href={isAuthenticated ? "/dashboard" : "/login?mode=signup"}
+                className="btn-gold group w-full sm:w-auto"
+              >
+                <span>{isAuthenticated ? "Open Dashboard" : "Start Monitoring Free"}</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
-              <a href="#check" className="btn-ghost w-full sm:w-auto">
-                Try Instant Checker
+              <a
+                href="#check"
+                className="btn-ghost group w-full sm:w-auto"
+              >
+                <span>Try Instant Checker</span>
               </a>
             </div>
-            <div className="fade-up mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-2" style={{ animationDelay: "320ms" }}>
-              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> No credit card</span>
-              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Unlimited domains</span>
-              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Re-checks every 15 min</span>
-              <span className="flex items-center gap-1.5"><span className="text-gold">✓</span> Open DNS engine</span>
+
+            <div className="fade-up mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs text-muted-2" style={{ animationDelay: "320ms" }}>
+              <span className="flex items-center gap-1.5"><span className="text-gold font-bold">✓</span> No credit card</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold font-bold">✓</span> Unlimited domains</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold font-bold">✓</span> Re-checks every 15 min</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold font-bold">✓</span> Open DNS engine</span>
             </div>
           </div>
         </section>
@@ -127,8 +139,9 @@ export default async function HomePage() {
                   <p className="mt-4 text-muted">
                     The engine behind the free checker is the same one that monitors your domains. The only difference: it never stops, and it remembers.
                   </p>
-                  <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold mt-8">
-                    {isAuthenticated ? "Go to Dashboard" : "Create free account"} <ArrowRight className="h-4 w-4" />
+                  <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold group mt-8">
+                    <span>{isAuthenticated ? "Go to Dashboard" : "Create free account"}</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 </div>
                 <ol className="space-y-4">
@@ -154,8 +167,9 @@ export default async function HomePage() {
               <div className="eyebrow">Free. Forever. Seriously.</div>
               <h2 className="font-display mx-auto mt-3 max-w-2xl text-3xl font-semibold text-white sm:text-5xl">Stop finding out from your customers.</h2>
               <p className="mx-auto mt-4 max-w-xl text-muted">Add your first domain in under a minute. Get your first alert before your next campaign lands in spam.</p>
-              <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold mt-8">
-                Start Monitoring Free <ArrowRight className="h-4 w-4" />
+              <Link href={isAuthenticated ? "/dashboard" : "/login?mode=signup"} className="btn-gold group mt-8">
+                <span>Start Monitoring Free</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
           </ScrollReveal>

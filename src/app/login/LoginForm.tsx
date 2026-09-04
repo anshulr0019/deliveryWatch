@@ -71,7 +71,7 @@ export function LoginForm() {
             <span className="mb-1.5 block text-xs text-muted">Full name (optional)</span>
             <div className="relative">
               <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-2" />
-              <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-dark pl-10" placeholder="Ada Lovelace" autoComplete="name" />
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-dark !pl-11" placeholder="Ada Lovelace" autoComplete="name" />
             </div>
           </label>
         )}
@@ -84,7 +84,7 @@ export function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-dark pl-10"
+              className="input-dark !pl-11"
               placeholder="you@company.com"
               autoComplete="email"
             />
@@ -100,7 +100,7 @@ export function LoginForm() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-dark pl-10"
+              className="input-dark !pl-11"
               placeholder={mode === "signup" ? "At least 8 characters" : "••••••••"}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />

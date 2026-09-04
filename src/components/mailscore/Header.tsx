@@ -20,16 +20,18 @@ export function Header({ isAuthenticated = false }: { isAuthenticated?: boolean 
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <Link href="/dashboard" className="btn-gold !px-4 !py-2 text-xs sm:text-sm">
-              Dashboard <ArrowRight className="h-3.5 w-3.5" />
+            <Link href="/dashboard" className="btn-gold btn-sm group">
+              <span>Dashboard</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           ) : (
             <>
               <Link href="/login" className="hidden text-sm text-muted transition hover:text-white sm:block">
                 Sign in
               </Link>
-              <Link href="/login?mode=signup" className="btn-gold !px-4 !py-2 text-xs sm:text-sm">
-                Start Free <ArrowRight className="h-3.5 w-3.5" />
+              <Link href="/login?mode=signup" className="btn-gold btn-sm group">
+                <span>Start Free</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
             </>
           )}
