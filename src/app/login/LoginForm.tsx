@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2, Lock, Mail, User } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 type Mode = "signin" | "signup";
 
@@ -13,10 +14,30 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
   const next = params.get("next") && params.get("next")!.startsWith("/") ? params.get("next")! : "/dashboard";
+
+  const getInitialError = () => {
+    const code = params.get("error");
+    if (!code) return null;
+    switch (code) {
+      case "google_not_configured":
+        return "Google Sign-In is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env.local.";
+      case "oauth_cancelled":
+        return "Google sign-in was cancelled.";
+      case "state_mismatch":
+      case "state_invalid":
+      case "state_missing":
+        return "Security state mismatch or session expired. Please try again.";
+      case "token_exchange_failed":
+      case "userinfo_failed":
+        return "Google authorization failed. Please try again.";
+      default:
+        return "Sign-in with Google failed. Please try again.";
+    }
+  };
+
+  const [error, setError] = useState<string | null>(getInitialError());
+  const [loading, setLoading] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -40,45 +61,70 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full rounded-2xl border border-slate-200/90 bg-white p-7 shadow-lg sm:p-9">
-      {/* Mode switcher tabs */}
-      <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
-        {(["signin", "signup"] as Mode[]).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => {
-              setMode(m);
-              setError(null);
-            }}
-            className={`cursor-pointer rounded-lg py-2 text-center transition ${
-              mode === m
-                ? "bg-white text-[#0F372E] shadow-sm font-bold"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+    <div className="w-full rounded-3xl border border-white/85 bg-white/80 p-7 shadow-[0_20px_50px_rgba(15,55,46,0.06),0_1px_2px_rgba(0,0,0,0.03)] backdrop-blur-2xl sm:p-9 font-apple">
+      {/* Smooth Glass Segmented Mode Switcher */}
+      <div className="relative mb-6 grid grid-cols-2 rounded-xl bg-slate-200/50 p-1 text-xs font-medium backdrop-blur-md border border-white/60">
+        {(["signin", "signup"] as Mode[]).map((m) => {
+          const isActive = mode === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setMode(m);
+                setError(null);
+              }}
+              className={`relative z-10 cursor-pointer rounded-lg py-2 text-center text-xs font-semibold transition-colors duration-200 ${
+                isActive ? "text-[#1d1d1f]" : "text-[#86868b] hover:text-[#1d1d1f]"
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeAuthTab"
+                  className="absolute inset-0 -z-10 rounded-lg bg-white/95 shadow-[0_2px_8px_rgba(0,0,0,0.07),0_0.5px_1px_rgba(0,0,0,0.04)] border border-white/80"
+                  transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                />
+              )}
+              {m === "signin" ? "Sign In" : "Create Account"}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Header with smooth crossfade */}
+      <div className="min-h-[58px]">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={mode}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {m === "signin" ? "Sign In" : "Create Account"}
-          </button>
-        ))}
+            <h2 className="text-2xl font-semibold tracking-[-0.025em] text-[#1d1d1f]">
+              {mode === "signin" ? "Welcome back" : "Start monitoring — free"}
+            </h2>
+            <p className="mt-1 text-[13px] leading-snug text-[#86868b]">
+              {mode === "signin"
+                ? "Sign in to your DeliverWatch dashboard."
+                : "Unlimited domains, 15-minute re-checks, alerts on WhatsApp, Slack & email."}
+            </p>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-[#0B1311]">
-          {mode === "signin" ? "Welcome back" : "Start monitoring — free"}
-        </h1>
-        <p className="mt-1.5 text-sm text-slate-500">
-          {mode === "signin"
-            ? "Sign in to your DeliverWatch dashboard."
-            : "Unlimited domains, 15-minute re-checks, alerts on WhatsApp, Slack & email."}
-        </p>
-      </div>
+      {/* Error notification banner */}
+      {error && (
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+          {error}
+        </div>
+      )}
 
-      {/* Google Auth Button Mock */}
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={() => alert("Google OAuth can be connected via your identity provider.")}
-          className="btn-secondary w-full !h-11 justify-center gap-2.5 !rounded-xl !border-slate-200 hover:!bg-slate-50"
+      {/* Google Auth Button */}
+      <div className="mt-5">
+        <a
+          href={`/api/auth/google?next=${encodeURIComponent(next)}`}
+          className="flex w-full h-11 items-center justify-center gap-2.5 rounded-xl border border-slate-200/80 bg-white/85 px-4 text-xs font-semibold text-[#1d1d1f] shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow hover:border-slate-300 active:scale-[0.99] cursor-pointer"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
@@ -98,37 +144,48 @@ export function LoginForm() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          <span className="text-sm font-semibold text-slate-700">Continue with Google</span>
-        </button>
+          <span>Continue with Google</span>
+        </a>
       </div>
 
       {/* Divider */}
-      <div className="relative my-6 flex items-center justify-center">
-        <div className="w-full border-t border-slate-200" />
-        <span className="absolute bg-white px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <div className="relative my-5 flex items-center justify-center">
+        <div className="w-full border-t border-slate-200/70" />
+        <span className="absolute bg-white/90 px-3 text-[10px] font-semibold uppercase tracking-wider text-[#86868b] backdrop-blur-sm rounded-full">
           Or continue with email
         </span>
       </div>
 
-      <form onSubmit={submit} className="space-y-4">
-        {mode === "signup" && (
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-slate-700">Full name (optional)</span>
-            <div className="relative">
-              <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="input-domain !pl-11"
-                placeholder="Ada Lovelace"
-                autoComplete="name"
-              />
-            </div>
-          </label>
-        )}
+      <form onSubmit={submit} className="space-y-3.5">
+        <AnimatePresence initial={false}>
+          {mode === "signup" && (
+            <motion.div
+              key="fullname-field"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <label className="block pt-0.5">
+                <span className="mb-1.5 block text-xs font-medium text-[#1d1d1f]">Full name (optional)</span>
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200/90 bg-white/80 py-2.5 pl-10 pr-3.5 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] shadow-sm backdrop-blur-sm transition-all focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Ada Lovelace"
+                    autoComplete="name"
+                  />
+                </div>
+              </label>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-semibold text-slate-700">Work Email</span>
+          <span className="mb-1.5 block text-xs font-medium text-[#1d1d1f]">Work Email</span>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -136,7 +193,7 @@ export function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-domain !pl-11"
+              className="w-full rounded-xl border border-slate-200/90 bg-white/80 py-2.5 pl-10 pr-3.5 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] shadow-sm backdrop-blur-sm transition-all focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               placeholder="you@company.com"
               autoComplete="email"
             />
@@ -144,7 +201,7 @@ export function LoginForm() {
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-semibold text-slate-700">Password</span>
+          <span className="mb-1.5 block text-xs font-medium text-[#1d1d1f]">Password</span>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -153,34 +210,36 @@ export function LoginForm() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-domain !pl-11"
+              className="w-full rounded-xl border border-slate-200/90 bg-white/80 py-2.5 pl-10 pr-3.5 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] shadow-sm backdrop-blur-sm transition-all focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               placeholder={mode === "signup" ? "At least 8 characters" : "••••••••"}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />
           </div>
         </label>
 
-        {error && (
-          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
-            {error}
-          </p>
-        )}
-
-        <button type="submit" disabled={loading} className="btn-primary w-full !h-12 mt-2">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          <span>{loading ? "Please wait…" : mode === "signin" ? "Sign in to DeliverWatch" : "Create Free Account"}</span>
-          {!loading && <ArrowRight className="h-4 w-4" />}
+        <button
+          type="submit"
+          disabled={loading}
+          className="group relative flex w-full h-11 items-center justify-center gap-2 rounded-xl bg-[#0F372E] hover:bg-[#164B3F] active:bg-[#0B2720] text-xs font-semibold text-white shadow-[0_4px_14px_rgba(15,55,46,0.18)] transition-all hover:shadow-[0_6px_20px_rgba(15,55,46,0.24)] active:scale-[0.99] disabled:opacity-60 cursor-pointer mt-2"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-white" />}
+          <span>
+            {loading ? "Please wait…" : mode === "signin" ? "Sign in to DeliverWatch" : "Create Free Account"}
+          </span>
+          {!loading && (
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+          )}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-500">
+      <div className="mt-5 text-center text-xs text-[#86868b]">
         {mode === "signin" ? (
           <>
             Don&apos;t have an account?{" "}
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className="cursor-pointer font-bold text-[#0F372E] hover:underline"
+              className="cursor-pointer font-medium text-[#0F372E] hover:underline"
             >
               Create free account
             </button>
@@ -191,13 +250,13 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className="cursor-pointer font-bold text-[#0F372E] hover:underline"
+              className="cursor-pointer font-medium text-[#0F372E] hover:underline"
             >
               Sign in
             </button>
           </>
         )}
-      </p>
+      </div>
     </div>
   );
 }

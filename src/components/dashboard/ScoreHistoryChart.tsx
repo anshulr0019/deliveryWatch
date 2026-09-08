@@ -9,12 +9,13 @@ type Range = 7 | 30 | 90;
 
 export function ScoreHistoryChart({ history }: { history: CheckPoint[] }) {
   const [range, setRange] = useState<Range>(30);
+  const [referenceTime] = useState(() => Date.now());
 
   const data = useMemo(() => {
-    const since = Date.now() - range * 24 * 3600 * 1000;
+    const since = referenceTime - range * 24 * 3600 * 1000;
     const filtered = history.filter((p) => new Date(p.t).getTime() >= since);
     return (filtered.length ? filtered : history.slice(-1)).map((p) => ({ ...p, ts: new Date(p.t).getTime() }));
-  }, [history, range]);
+  }, [history, range, referenceTime]);
 
   const min = data.length ? Math.min(...data.map((d) => d.score)) : 0;
   const max = data.length ? Math.max(...data.map((d) => d.score)) : 0;

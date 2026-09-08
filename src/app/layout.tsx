@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   description:
     "Your domains are getting blacklisted. You just don't know it yet. DeliverWatch monitors SPF, DKIM, DMARC, MX and 8 blacklists 24/7 and alerts you on WhatsApp, Slack or email. Free forever.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   openGraph: {
     title: "DeliverWatch — Free 24/7 Email Deliverability Monitoring",
     description: "SPF, DKIM, DMARC, MX and blacklist monitoring with instant alerts. 100% free.",

@@ -72,6 +72,8 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
         id: profiles.id,
         email: profiles.email,
         fullName: profiles.fullName,
+        googleId: profiles.googleId,
+        avatarUrl: profiles.avatarUrl,
         plan: profiles.plan,
         createdAt: profiles.createdAt,
       })

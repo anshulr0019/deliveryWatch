@@ -20,7 +20,9 @@ export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   fullName: text("full_name"),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"),
+  googleId: text("google_id").unique(),
+  avatarUrl: text("avatar_url"),
   plan: text("plan").notNull().default("community"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -47,7 +47,12 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
   const [showForm, setShowForm] = useState(Boolean(prefillDomain) || initialDomains.length === 0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => setList(initialDomains), [initialDomains]);
+  const [prevInitial, setPrevInitial] = useState(initialDomains);
+  if (initialDomains !== prevInitial) {
+    setPrevInitial(initialDomains);
+    setList(initialDomains);
+  }
+
   useEffect(() => {
     if (showForm) inputRef.current?.focus();
   }, [showForm]);

@@ -15,14 +15,14 @@ export function Footer() {
           <div className="eyebrow mb-4 text-[#0F372E]">Product</div>
           <ul className="space-y-2.5 text-sm text-slate-600">
             <li>
-              <a href="/#features" className="hover:text-[#0F372E] transition">
+              <Link href="/#features" className="hover:text-[#0F372E] transition">
                 Features
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/#check" className="hover:text-[#0F372E] transition">
+              <Link href="/#check" className="hover:text-[#0F372E] transition">
                 Instant Checker
-              </a>
+              </Link>
             </li>
             <li>
               <Link href="/login" className="hover:text-[#0F372E] transition">

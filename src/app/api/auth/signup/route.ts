@@ -20,16 +20,21 @@ export async function POST(req: Request) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ error: "Please enter a valid email address." }, { status: 400 });
   if (password.length < 8) return Response.json({ error: "Password must be at least 8 characters." }, { status: 400 });
 
-  const existing = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.email, email)).limit(1);
-  if (existing.length) return Response.json({ error: "An account with that email already exists. Sign in instead." }, { status: 409 });
+  try {
+    const existing = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.email, email)).limit(1);
+    if (existing.length) return Response.json({ error: "An account with that email already exists. Sign in instead." }, { status: 409 });
 
-  const [user] = await db
-    .insert(profiles)
-    .values({ email, fullName, passwordHash: hashPassword(password), plan: "community" })
-    .returning({ id: profiles.id, email: profiles.email, fullName: profiles.fullName, plan: profiles.plan });
+    const [user] = await db
+      .insert(profiles)
+      .values({ email, fullName, passwordHash: hashPassword(password), plan: "community" })
+      .returning({ id: profiles.id, email: profiles.email, fullName: profiles.fullName, plan: profiles.plan });
 
-  const { token, expiresAt } = await createSession(user.id);
-  await setSessionCookie(token, expiresAt);
+    const { token, expiresAt } = await createSession(user.id);
+    await setSessionCookie(token, expiresAt);
 
-  return Response.json({ user });
+    return Response.json({ user });
+  } catch (err) {
+    console.error("[signup] Database operation failed:", err);
+    return Response.json({ error: "Database connection failed. Please verify your DATABASE_URL in .env.local." }, { status: 500 });
+  }
 }

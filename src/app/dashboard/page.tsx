@@ -6,6 +6,10 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 
 export const dynamic = "force-dynamic";
 
+function getSevenDaysAgo() {
+  return new Date(Date.now() - 7 * 24 * 3600 * 1000);
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ add?: string }> }) {
   const user = await requireUser();
   const { add } = await searchParams;
@@ -13,7 +17,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const rows = await db.select().from(domains).where(eq(domains.userId, user.id)).orderBy(desc(domains.createdAt));
 
   const domainIds = rows.map((d) => d.id);
-  const since = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const since = getSevenDaysAgo();
   const recentEvents =
     domainIds.length > 0
       ? await db
