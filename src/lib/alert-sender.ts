@@ -32,26 +32,26 @@ function allow(userId: string): boolean {
 
 function emailHtml(ctx: AlertContext): string {
   const { event, domain, score } = ctx;
-  const color = SEVERITY_COLOR[event.severity] ?? "#C8A96E";
-  return `<!doctype html><html><body style="margin:0;background:#060709;font-family:Inter,Segoe UI,Arial,sans-serif;color:#fff;padding:32px 16px">
+  const color = SEVERITY_COLOR[event.severity] ?? "#10B981";
+  return `<!doctype html><html><body style="margin:0;background:#0F172A;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#F8FAFC;padding:36px 16px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-  <table role="presentation" width="560" style="max-width:560px;background:#0B0D12;border:1px solid rgba(200,169,110,0.35);border-radius:16px;padding:32px">
-    <tr><td style="font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#C8A96E;font-weight:600">DeliverWatch Alert</td></tr>
-    <tr><td style="padding-top:12px;font-size:22px;font-weight:600;color:#fff">${SEVERITY_EMOJI[event.severity] ?? ""} ${escapeHtml(event.title)}</td></tr>
+  <table role="presentation" width="560" style="max-width:560px;background:#1E293B;border:1px solid rgba(16,185,129,0.3);border-radius:20px;padding:32px;box-shadow:0 12px 36px rgba(0,0,0,0.3)">
+    <tr><td style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#10B981;font-weight:700">DeliverWatch Alert</td></tr>
+    <tr><td style="padding-top:12px;font-size:22px;font-weight:700;color:#FFFFFF">${SEVERITY_EMOJI[event.severity] ?? ""} ${escapeHtml(event.title)}</td></tr>
     <tr><td style="padding-top:8px;font-size:14px;color:#94A3B8;line-height:1.6">${escapeHtml(event.description)}</td></tr>
     <tr><td style="padding-top:24px">
-      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#12151C;border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#0F172A;border:1px solid rgba(255,255,255,0.08);border-radius:14px">
         <tr>
-          <td style="padding:16px;font-size:13px;color:#888">Domain<br><span style="color:#fff;font-size:16px;font-weight:600">${escapeHtml(domain)}</span></td>
-          <td style="padding:16px;font-size:13px;color:#888">Severity<br><span style="color:${color};font-size:16px;font-weight:600;text-transform:capitalize">${event.severity}</span></td>
-          <td style="padding:16px;font-size:13px;color:#888">Score<br><span style="color:#E8D2A2;font-size:16px;font-weight:600">${score}/100</span></td>
+          <td style="padding:16px;font-size:12px;color:#94A3B8">Domain<br><span style="color:#FFFFFF;font-size:15px;font-weight:700">${escapeHtml(domain)}</span></td>
+          <td style="padding:16px;font-size:12px;color:#94A3B8">Severity<br><span style="color:${color};font-size:15px;font-weight:700;text-transform:capitalize">${event.severity}</span></td>
+          <td style="padding:16px;font-size:12px;color:#94A3B8">Deliverability Score<br><span style="color:#10B981;font-size:15px;font-weight:700">${score}/100</span></td>
         </tr>
       </table>
     </td></tr>
-    <tr><td style="padding-top:24px" align="center">
-      <a href="${SITE_URL}/dashboard/${ctx.domainId}" style="display:inline-block;background:linear-gradient(135deg,#E8D2A2,#C8A96E,#967840);color:#060709;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:999px;font-size:14px">Open Dashboard →</a>
+    <tr><td style="padding-top:28px" align="center">
+      <a href="${SITE_URL}/dashboard/${ctx.domainId}" style="display:inline-block;background:#0F372E;border:1px solid #10B981;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;font-size:14px;box-shadow:0 4px 14px rgba(16,185,129,0.2)">Open Dashboard →</a>
     </td></tr>
-    <tr><td style="padding-top:24px;font-size:11px;color:#555;text-align:center">You receive this because email alerts are enabled in DeliverWatch. 100% free, forever.</td></tr>
+    <tr><td style="padding-top:24px;font-size:11px;color:#64748B;text-align:center">DeliverWatch Continuous Monitoring · 100% Free Forever</td></tr>
   </table></td></tr></table></body></html>`;
 }
 
