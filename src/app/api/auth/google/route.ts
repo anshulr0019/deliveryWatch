@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   // Generate cryptographically random state to prevent CSRF attacks
   const state = randomBytes(24).toString("hex");
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+  const rawUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).trim();
+  const siteUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://") ? rawUrl : `https://${rawUrl}`;
   const redirectUri = new URL("/api/auth/google/callback", siteUrl).toString();
 
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

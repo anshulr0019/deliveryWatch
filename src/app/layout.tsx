@@ -10,11 +10,24 @@ import { ScrollProgress } from "@/components/mailscore/ScrollProgress";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
 
+function getSiteUrl(): URL {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
+  if (raw) {
+    const withProto = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+    try {
+      return new URL(withProto);
+    } catch {
+      // ignore
+    }
+  }
+  return new URL("http://localhost:3000");
+}
+
 export const metadata: Metadata = {
   title: "DeliverWatch — Continuous Deliverability & Blacklist Monitoring — 100% Free",
   description:
     "Your domains are getting blacklisted. You just don't know it yet. DeliverWatch monitors SPF, DKIM, DMARC, MX and 8 blacklists 24/7 and alerts you on WhatsApp, Slack or email. Free forever.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: getSiteUrl(),
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",

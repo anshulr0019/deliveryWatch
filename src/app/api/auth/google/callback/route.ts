@@ -68,7 +68,8 @@ export async function GET(req: NextRequest) {
     return loginRedirect("google_not_configured");
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || url.origin;
+  const rawUrl = (process.env.NEXT_PUBLIC_SITE_URL || url.origin).trim();
+  const siteUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://") ? rawUrl : `https://${rawUrl}`;
   const redirectUri = new URL("/api/auth/google/callback", siteUrl).toString();
 
   try {
