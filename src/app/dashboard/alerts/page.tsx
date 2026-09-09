@@ -7,7 +7,7 @@ import { AlertChannelsManager, type ChannelRow } from "@/components/dashboard/Al
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Alert Channels — DeliverWatch",
+  title: "Alert Channels — DeliveryWatch",
   description: "Configure email, Slack, WhatsApp, and webhook alert channels for real-time deliverability notifications.",
 };
 

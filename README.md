@@ -1,4 +1,4 @@
-# DeliverWatch
+# DeliveryWatch
 
 **Continuous Deliverability & Blacklist Monitoring — 100% Free.**
 
@@ -70,7 +70,7 @@ Fill in the following variables:
 | `NEXT_PUBLIC_SITE_URL` | ✅ Yes | Your app URL (e.g., `http://localhost:3000` for dev) |
 | `CRON_SECRET` | Production | Secret for authenticating cron job requests |
 | `RESEND_API_KEY` | For email alerts | API key from [Resend](https://resend.com) |
-| `ALERT_FROM_EMAIL` | For email alerts | Sender address (e.g., `DeliverWatch <onboarding@resend.dev>`) |
+| `ALERT_FROM_EMAIL` | For email alerts | Sender address (e.g., `DeliveryWatch <onboarding@resend.dev>`) |
 | `GOOGLE_CLIENT_ID` | For Google OAuth | Google Cloud Console OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | For Google OAuth | Google Cloud Console OAuth client secret |
 | `TWILIO_ACCOUNT_SID` | For WhatsApp alerts | Twilio Account SID |

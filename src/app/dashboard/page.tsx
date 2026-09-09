@@ -7,7 +7,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Dashboard — DeliverWatch",
+  title: "Dashboard — DeliveryWatch",
   description: "Monitor your sending domains, track deliverability scores, and view recent alerts.",
 };
 

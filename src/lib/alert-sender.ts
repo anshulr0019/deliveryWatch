@@ -36,7 +36,7 @@ function emailHtml(ctx: AlertContext): string {
   return `<!doctype html><html><body style="margin:0;background:#0F172A;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#F8FAFC;padding:36px 16px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
   <table role="presentation" width="560" style="max-width:560px;background:#1E293B;border:1px solid rgba(16,185,129,0.3);border-radius:20px;padding:32px;box-shadow:0 12px 36px rgba(0,0,0,0.3)">
-    <tr><td style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#10B981;font-weight:700">DeliverWatch Alert</td></tr>
+    <tr><td style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#10B981;font-weight:700">DeliveryWatch Alert</td></tr>
     <tr><td style="padding-top:12px;font-size:22px;font-weight:700;color:#FFFFFF">${SEVERITY_EMOJI[event.severity] ?? ""} ${escapeHtml(event.title)}</td></tr>
     <tr><td style="padding-top:8px;font-size:14px;color:#94A3B8;line-height:1.6">${escapeHtml(event.description)}</td></tr>
     <tr><td style="padding-top:24px">
@@ -51,7 +51,7 @@ function emailHtml(ctx: AlertContext): string {
     <tr><td style="padding-top:28px" align="center">
       <a href="${SITE_URL}/dashboard/${ctx.domainId}" style="display:inline-block;background:#0F372E;border:1px solid #10B981;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;font-size:14px;box-shadow:0 4px 14px rgba(16,185,129,0.2)">Open Dashboard →</a>
     </td></tr>
-    <tr><td style="padding-top:24px;font-size:11px;color:#64748B;text-align:center">DeliverWatch Continuous Monitoring · 100% Free Forever</td></tr>
+    <tr><td style="padding-top:24px;font-size:11px;color:#64748B;text-align:center">DeliveryWatch Continuous Monitoring · 100% Free Forever</td></tr>
   </table></td></tr></table></body></html>`;
 }
 
@@ -74,7 +74,7 @@ async function sendEmail(to: string, ctx: AlertContext) {
   }
   const { Resend } = await import("resend");
   const resend = new Resend(key);
-  const from = process.env.ALERT_FROM_EMAIL ?? "DeliverWatch <alerts@resend.dev>";
+  const from = process.env.ALERT_FROM_EMAIL ?? "DeliveryWatch <alerts@resend.dev>";
   const { error } = await resend.emails.send({
     from,
     to,
@@ -142,7 +142,7 @@ async function sendWhatsApp(toNumber: string, ctx: AlertContext) {
 
 async function sendWebhook(url: string, secret: string | undefined, ctx: AlertContext) {
   const payload = JSON.stringify({
-    source: "deliverwatch",
+    source: "deliverywatch",
     sentAt: new Date().toISOString(),
     domain: ctx.domain,
     domainId: ctx.domainId,
@@ -151,8 +151,8 @@ async function sendWebhook(url: string, secret: string | undefined, ctx: AlertCo
     event: ctx.event,
     dashboardUrl: `${SITE_URL}/dashboard/${ctx.domainId}`,
   });
-  const headers: Record<string, string> = { "Content-Type": "application/json", "User-Agent": "DeliverWatch/1.0" };
-  if (secret) headers["X-DeliverWatch-Signature"] = `sha256=${createHmac("sha256", secret).update(payload).digest("hex")}`;
+  const headers: Record<string, string> = { "Content-Type": "application/json", "User-Agent": "DeliveryWatch/1.0" };
+  if (secret) headers["X-DeliveryWatch-Signature"] = `sha256=${createHmac("sha256", secret).update(payload).digest("hex")}`;
   const res = await fetch(url, { method: "POST", headers, body: payload });
   return { ok: res.ok, reason: res.ok ? undefined : `Webhook responded ${res.status}` };
 }

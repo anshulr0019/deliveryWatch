@@ -19,7 +19,7 @@ const TYPE_META: Record<ChannelType, { label: string; icon: typeof Mail; field: 
   email: { label: "Email", icon: Mail, field: "email", placeholder: "alerts@yourcompany.com", help: "HTML alert emails via Resend." },
   slack: { label: "Slack", icon: Hash, field: "webhookUrl", placeholder: "https://hooks.slack.com/services/T000/B000/XXXX", help: "Create an Incoming Webhook in your Slack workspace and paste the URL." },
   whatsapp: { label: "WhatsApp", icon: MessageCircle, field: "phone", placeholder: "+14155551234", help: "E.164 format. Delivered via the Twilio WhatsApp API." },
-  webhook: { label: "Webhook", icon: Webhook, field: "url", placeholder: "https://api.yourapp.com/deliverwatch", help: "JSON POST with an optional HMAC-SHA256 signature header." },
+  webhook: { label: "Webhook", icon: Webhook, field: "url", placeholder: "https://api.yourapp.com/deliverywatch", help: "JSON POST with an optional HMAC-SHA256 signature header." },
 };
 
 function describe(c: ChannelRow) {
@@ -162,7 +162,7 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                 <span className="mb-1.5 block text-xs font-semibold text-slate-700">Signing secret (optional)</span>
                 <input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="whsec_…" className="input-domain" autoComplete="off" />
                 <span className="mt-1.5 block text-[11px] text-slate-500">
-                  We send <code>X-DeliverWatch-Signature: sha256=…</code> (HMAC of the raw body).
+                  We send <code>X-DeliveryWatch-Signature: sha256=…</code> (HMAC of the raw body).
                 </span>
               </label>
             )}

@@ -106,7 +106,7 @@ export function LoginForm() {
             </h2>
             <p className="mt-1 text-[13px] leading-snug text-[#86868b]">
               {mode === "signin"
-                ? "Sign in to your DeliverWatch dashboard."
+                ? "Sign in to your DeliveryWatch dashboard."
                 : "Unlimited domains, 15-minute re-checks, alerts on WhatsApp, Slack & email."}
             </p>
           </motion.div>
@@ -224,7 +224,7 @@ export function LoginForm() {
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin text-white" />}
           <span>
-            {loading ? "Please wait…" : mode === "signin" ? "Sign in to DeliverWatch" : "Create Free Account"}
+            {loading ? "Please wait…" : mode === "signin" ? "Sign in to DeliveryWatch" : "Create Free Account"}
           </span>
           {!loading && (
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />

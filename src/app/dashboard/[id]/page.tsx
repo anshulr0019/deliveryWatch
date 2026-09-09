@@ -14,10 +14,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  if (!UUID_RE.test(id)) return { title: "Domain — DeliverWatch" };
+  if (!UUID_RE.test(id)) return { title: "Domain — DeliveryWatch" };
   const [row] = await db.select({ domain: domains.domain }).from(domains).where(eq(domains.id, id)).limit(1);
   return {
-    title: row ? `${row.domain} — DeliverWatch` : "Domain — DeliverWatch",
+    title: row ? `${row.domain} — DeliveryWatch` : "Domain — DeliveryWatch",
     description: row ? `Deliverability monitoring and DNS health for ${row.domain}.` : "Domain monitoring details.",
   };
 }

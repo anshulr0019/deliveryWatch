@@ -10,7 +10,7 @@ export const maxDuration = 30;
 
 /**
  * POST /api/check — add a domain to monitoring and run the baseline scan.
- * DeliverWatch is 100% free: no plan limits.
+ * DeliveryWatch is 100% free: no plan limits.
  */
 export async function POST(req: Request) {
   const user = await getCurrentUser();

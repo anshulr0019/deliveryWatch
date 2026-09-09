@@ -70,7 +70,7 @@ export async function POST(_req: Request, { params }: Params) {
     event: {
       type: "test_alert",
       severity: "warning",
-      title: "Test alert from DeliverWatch",
+      title: "Test alert from DeliveryWatch",
       description: "If you can read this, your alert channel is configured correctly.",
     },
   });

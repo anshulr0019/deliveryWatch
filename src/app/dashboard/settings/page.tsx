@@ -21,8 +21,8 @@ import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Settings — DeliverWatch",
-  description: "Manage your DeliverWatch account, plan details, alert channels, and monitoring configuration.",
+  title: "Settings — DeliveryWatch",
+  description: "Manage your DeliveryWatch account, plan details, alert channels, and monitoring configuration.",
 };
 
 export default async function SettingsPage() {
@@ -125,7 +125,7 @@ export default async function SettingsPage() {
             </ul>
 
             <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/60 p-3.5 text-xs text-emerald-900">
-              <span className="font-bold">No hidden tiers or limits:</span> DeliverWatch is built for founders and senders who need continuous deliverability monitoring without paywalls.
+              <span className="font-bold">No hidden tiers or limits:</span> DeliveryWatch is built for founders and senders who need continuous deliverability monitoring without paywalls.
             </div>
           </div>
         </SpotlightCard>

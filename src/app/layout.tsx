@@ -24,16 +24,16 @@ function getSiteUrl(): URL {
 }
 
 export const metadata: Metadata = {
-  title: "DeliverWatch — Continuous Deliverability & Blacklist Monitoring — 100% Free",
+  title: "DeliveryWatch — Continuous Deliverability & Blacklist Monitoring — 100% Free",
   description:
-    "Your domains are getting blacklisted. You just don't know it yet. DeliverWatch monitors SPF, DKIM, DMARC, MX and 8 blacklists 24/7 and alerts you on WhatsApp, Slack or email. Free forever.",
+    "Your domains are getting blacklisted. You just don't know it yet. DeliveryWatch monitors SPF, DKIM, DMARC, MX and 8 blacklists 24/7 and alerts you on WhatsApp, Slack or email. Free forever.",
   metadataBase: getSiteUrl(),
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
   },
   openGraph: {
-    title: "DeliverWatch — Free 24/7 Email Deliverability Monitoring",
+    title: "DeliveryWatch — Free 24/7 Email Deliverability Monitoring",
     description: "SPF, DKIM, DMARC, MX and blacklist monitoring with instant alerts. 100% free.",
     type: "website",
   },

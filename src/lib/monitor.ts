@@ -59,7 +59,7 @@ export async function runMonitoredCheck(opts: {
         type: "monitoring_started",
         severity: "info",
         title: "Monitoring started",
-        description: `Baseline scan complete — ${domainName} scored ${result.totalScore}/100 (${result.grade}). DeliverWatch will re-check automatically.`,
+        description: `Baseline scan complete — ${domainName} scored ${result.totalScore}/100 (${result.grade}). DeliveryWatch will re-check automatically.`,
       },
     ];
     if (result.rbl.listedOn.length > 0) {

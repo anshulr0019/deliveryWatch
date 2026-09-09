@@ -48,7 +48,7 @@ export function Footer() {
       </div>
       <div className="border-t border-slate-200/80 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:px-6">
-          <span>© {new Date().getFullYear()} DeliverWatch. Continuous Deliverability Monitoring.</span>
+          <span>© {new Date().getFullYear()} DeliveryWatch. Continuous Deliverability Monitoring.</span>
           <span className="font-medium text-emerald-700">100% Free · No credit card required</span>
         </div>
       </div>

@@ -145,7 +145,7 @@ export default async function HomePage() {
         <section className="border-y border-slate-200/70 bg-slate-50/60 py-7">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <p className="mb-5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-              Teams using DeliverWatch alongside
+              Teams using DeliveryWatch alongside
             </p>
             <Marquee items={LOGOS} speed={55} gap={72} />
           </div>
@@ -168,7 +168,7 @@ export default async function HomePage() {
                 Infrastructure That Actually Delivers
               </h2>
               <p className="mt-4 text-base text-slate-600">
-                One-off DNS tests tell you where you were yesterday. DeliverWatch guards your sender reputation 24/7 without manual maintenance.
+                One-off DNS tests tell you where you were yesterday. DeliveryWatch guards your sender reputation 24/7 without manual maintenance.
               </p>
             </div>
           </ScrollReveal>
@@ -260,7 +260,7 @@ export default async function HomePage() {
                   Set Up In Minutes, <br />Protected Forever
                 </h3>
                 <p className="mt-4 text-sm leading-relaxed text-emerald-100/90 sm:text-base">
-                  Simply paste your sending domains. DeliverWatch instantly audits your DNS architecture, validates SPF lookups against the 10-limit rule, and establishes a historical baseline.
+                  Simply paste your sending domains. DeliveryWatch instantly audits your DNS architecture, validates SPF lookups against the 10-limit rule, and establishes a historical baseline.
                 </p>
 
                 <div className="mt-6 space-y-3.5 text-sm text-white">

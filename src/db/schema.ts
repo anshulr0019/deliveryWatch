@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * DeliverWatch schema.
+ * DeliveryWatch schema.
  * Mirrors the Supabase design (profiles / domains / checks / events / alert_channels)
  * but runs on plain PostgreSQL via Drizzle, with first-party session auth.
  */

@@ -99,7 +99,7 @@ export function Logo({
 
       {!compact && (
         <span className="font-apple text-[17px] font-bold tracking-tight text-[#0B1311]">
-          Deliver<span className="text-[#0F372E]">Watch</span>
+          Delivery<span className="text-[#0F372E]">Watch</span>
         </span>
       )}
     </Link>

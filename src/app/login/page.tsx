@@ -4,7 +4,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/mailscore/Logo";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Sign in — DeliverWatch" };
+export const metadata = { title: "Sign in — DeliveryWatch" };
 
 export default function LoginPage() {
   return (
@@ -42,7 +42,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-2.5 text-[13px] leading-relaxed text-[#6e6e73]">
-              DeliverWatch runs real-time DNS diagnostics across SPF, DKIM, DMARC, MX records and 8 blacklists around the clock so you never land in spam.
+              DeliveryWatch runs real-time DNS diagnostics across SPF, DKIM, DMARC, MX records and 8 blacklists around the clock so you never land in spam.
             </p>
 
             <div className="mt-6 space-y-2.5 text-xs text-[#1d1d1f]">
