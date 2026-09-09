@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { and, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
@@ -10,6 +11,16 @@ import { gradeFor, tierFor } from "@/lib/dns-check";
 export const dynamic = "force-dynamic";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return { title: "Domain — DeliverWatch" };
+  const [row] = await db.select({ domain: domains.domain }).from(domains).where(eq(domains.id, id)).limit(1);
+  return {
+    title: row ? `${row.domain} — DeliverWatch` : "Domain — DeliverWatch",
+    description: row ? `Deliverability monitoring and DNS health for ${row.domain}.` : "Domain monitoring details.",
+  };
+}
 
 export default async function DomainPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();

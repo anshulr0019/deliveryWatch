@@ -6,6 +6,11 @@ import { AlertChannelsManager, type ChannelRow } from "@/components/dashboard/Al
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Alert Channels — DeliverWatch",
+  description: "Configure email, Slack, WhatsApp, and webhook alert channels for real-time deliverability notifications.",
+};
+
 export default async function AlertsPage() {
   const user = await requireUser();
   const rows = await db.select().from(alertChannels).where(eq(alertChannels.userId, user.id)).orderBy(desc(alertChannels.createdAt));

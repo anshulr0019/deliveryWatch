@@ -6,6 +6,11 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Dashboard — DeliverWatch",
+  description: "Monitor your sending domains, track deliverability scores, and view recent alerts.",
+};
+
 function getSevenDaysAgo() {
   return new Date(Date.now() - 7 * 24 * 3600 * 1000);
 }

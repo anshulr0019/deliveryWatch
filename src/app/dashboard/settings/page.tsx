@@ -20,6 +20,11 @@ import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Settings — DeliverWatch",
+  description: "Manage your DeliverWatch account, plan details, alert channels, and monitoring configuration.",
+};
+
 export default async function SettingsPage() {
   const user = await requireUser();
 
