@@ -1,23 +1,13 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
-
 export const dynamic = "force-dynamic";
-
 export async function GET() {
-  let dbError: string | null = null;
   try {
-    await db.execute(sql`select 1`);
-  } catch (err) {
-    dbError = err instanceof Error ? err.message : String(err);
-  }
+  try { await db.execute(sql`select 1`); return Response.json({ ok: true }); }
+  catch { return Response.json({ ok: false, error: "Database unavailable" }, { status: 503 }); }
 
-  return Response.json({
-    ok: dbError === null,
-    dbError,
-    hasDbUrl: Boolean(process.env.DATABASE_URL),
-    hasGoogleId: Boolean(process.env.GOOGLE_CLIENT_ID),
-    googleIdLen: (process.env.GOOGLE_CLIENT_ID ?? "").length,
-    hasGoogleSecret: Boolean(process.env.GOOGLE_CLIENT_SECRET),
-    env: process.env.NODE_ENV,
-  });
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }

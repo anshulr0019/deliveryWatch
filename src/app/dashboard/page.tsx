@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Dashboard — DeliveryWatch",
-  description: "Monitor your sending domains, track deliverability scores, and view recent alerts.",
+  description: "Monitor your sending domains, track DNS health scores, and view recent alerts.",
 };
 
 function getSevenDaysAgo() {

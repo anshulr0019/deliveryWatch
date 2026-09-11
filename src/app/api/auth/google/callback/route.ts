@@ -1,3 +1,4 @@
+import { safeNext } from "@/lib/request";
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
@@ -49,9 +50,7 @@ export async function GET(req: NextRequest) {
   try {
     const parsed = JSON.parse(stateCookie);
     savedState = parsed.state;
-    if (parsed.next && typeof parsed.next === "string" && parsed.next.startsWith("/") && !parsed.next.startsWith("//")) {
-      nextUrl = parsed.next;
-    }
+    nextUrl = safeNext(parsed.next);
   } catch {
     return loginRedirect("state_invalid");
   }
@@ -76,6 +75,7 @@ export async function GET(req: NextRequest) {
     // 1. Exchange authorization code for tokens
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
+      signal: AbortSignal.timeout(10000),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
@@ -100,6 +100,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch user profile from Google OpenID userinfo endpoint
     const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      signal: AbortSignal.timeout(10000),
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
@@ -109,7 +110,7 @@ export async function GET(req: NextRequest) {
     }
 
     const userInfo: GoogleUserInfo = await userRes.json();
-    if (!userInfo.sub || !userInfo.email) {
+    if (!userInfo.sub || !userInfo.email || userInfo.email_verified !== true) {
       return loginRedirect("incomplete_google_profile");
     }
 
@@ -125,17 +126,8 @@ export async function GET(req: NextRequest) {
       const [existingByEmail] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
 
       if (existingByEmail) {
-        // Link Google ID to the existing account
-        const [updated] = await db
-          .update(profiles)
-          .set({
-            googleId,
-            avatarUrl: existingByEmail.avatarUrl ?? avatarUrl,
-            fullName: existingByEmail.fullName ?? fullName,
-          })
-          .where(eq(profiles.id, existingByEmail.id))
-          .returning();
-        user = updated;
+        // Email alone is not proof of ownership of an existing password account.
+        return loginRedirect("account_link_required");
       } else {
         // Create new account
         const [created] = await db
@@ -144,6 +136,7 @@ export async function GET(req: NextRequest) {
             email,
             fullName,
             googleId,
+            emailVerifiedAt: new Date(),
             avatarUrl,
             plan: "community",
           })
@@ -151,6 +144,8 @@ export async function GET(req: NextRequest) {
         user = created;
       }
     }
+
+    if (!user.emailVerifiedAt) await db.update(profiles).set({ emailVerifiedAt: new Date() }).where(eq(profiles.id, user.id));
 
     // 4. Create first-party session and set session cookie
     const { token, expiresAt } = await createSession(user.id);

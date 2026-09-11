@@ -61,7 +61,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
       const res = await fetch(`/api/domains/${domain.id}/recheck`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to recheck");
-      setFlash({ kind: "ok", text: `Scanned: score is now ${data.check?.score ?? domain.latestScore}/100` });
+      setFlash({ kind: "ok", text: `Scanned: score is now ${data.score ?? domain.latestScore}/100` });
       router.refresh();
     } catch (err) {
       setFlash({ kind: "err", text: err instanceof Error ? err.message : "Failed to recheck" });
@@ -130,6 +130,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               {domain.lastCheckedAt ? `Last checked ${formatDistanceToNow(new Date(domain.lastCheckedAt), { addSuffix: true })}` : "Not checked yet"} · Monitoring since{" "}
               {format(new Date(domain.createdAt), "MMM d, yyyy")}
             </p>
+            {latestResult && !latestResult.complete && <p className="mt-2 text-sm text-amber-800">Partial DNS score: some checks are unknown. Review the observations below before changing DNS.</p>}
             {flash && (
               <p className={`mt-3 rounded-xl border px-3.5 py-2 text-sm font-semibold ${flash.kind === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
                 {flash.text}
@@ -218,12 +219,12 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
             />
             <CheckCard
               title="Blacklists (RBL)"
-              subtitle="8 reputation providers"
+              subtitle="7 reputation providers"
               status={latestResult.rbl.status}
               score={latestResult.rbl.score}
               facts={[
-                { label: "Outbound IP", value: latestResult.rbl.ip ?? "unresolved" },
-                { label: "Listed on", value: latestResult.rbl.listedOn.length ? latestResult.rbl.listedOn.join(", ") : "0 of 8 clean" },
+                { label: "Checked IP", value: latestResult.rbl.ip ?? "unresolved" },
+                { label: "Listed on", value: latestResult.rbl.listedOn.length ? latestResult.rbl.listedOn.join(", ") : "None reported (check coverage below)" },
               ]}
               issues={latestResult.rbl.issues}
               suggestions={latestResult.rbl.suggestions}

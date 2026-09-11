@@ -1,3 +1,6 @@
+import { rateLimit } from "@/lib/rate-limit";
+import { resolveWebhook } from "@/lib/safe-webhook";
+import { readObject } from "@/lib/request";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { alertChannels } from "@/db/schema";
@@ -5,7 +8,7 @@ import { getCurrentUser, unauthorized } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const TYPES = ["email", "slack", "whatsapp", "webhook"] as const;
+const TYPES = ["email", "slack", "webhook"] as const;
 type ChannelType = (typeof TYPES)[number];
 
 function validateConfig(type: ChannelType, cfg: Record<string, unknown>): { ok: true; config: Record<string, string> } | { ok: false; error: string } {
@@ -20,14 +23,9 @@ function validateConfig(type: ChannelType, cfg: Record<string, unknown>): { ok: 
       if (!/^https:\/\/hooks\.slack\.com\/services\/.+/.test(webhookUrl)) return { ok: false, error: "Enter a valid Slack incoming webhook URL (https://hooks.slack.com/services/...)." };
       return { ok: true, config: { webhookUrl } };
     }
-    case "whatsapp": {
-      const phone = String(cfg.phone ?? "").replace(/[\s()-]/g, "");
-      if (!/^\+[1-9]\d{6,14}$/.test(phone)) return { ok: false, error: "Enter a WhatsApp number in E.164 format, e.g. +14155551234." };
-      return { ok: true, config: { phone } };
-    }
     case "webhook": {
       const url = String(cfg.url ?? "").trim();
-      if (!/^https?:\/\/.+/.test(url)) return { ok: false, error: "Enter a valid webhook URL." };
+      if (!/^https:\/\/.+/.test(url)) return { ok: false, error: "Enter a valid webhook URL." };
       const secret = String(cfg.secret ?? "").trim();
       return { ok: true, config: secret ? { url, secret } : { url } };
     }
@@ -36,30 +34,44 @@ function validateConfig(type: ChannelType, cfg: Record<string, unknown>): { ok: 
 
 /** GET /api/alerts — list alert channels. */
 export async function GET() {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
   const rows = await db.select().from(alertChannels).where(eq(alertChannels.userId, user.id)).orderBy(desc(alertChannels.createdAt));
-  return Response.json({ channels: rows });
+  return Response.json({ channels: rows.filter((row) => TYPES.includes(row.type as ChannelType)) });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }
 
 /** POST /api/alerts — create an alert channel. */
 export async function POST(req: Request) {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
+  const limited = await rateLimit("alert-create", user.id, 10);
+  if (limited) return limited;
 
-  let body: { type?: string; config?: Record<string, unknown> };
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const body = await readObject(req);
+  if (body instanceof Response) return body;
 
   const type = body.type as ChannelType;
   if (!TYPES.includes(type)) return Response.json({ error: "Invalid channel type." }, { status: 400 });
 
-  const v = validateConfig(type, body.config ?? {});
+  const v = validateConfig(type, body.config && typeof body.config === "object" && !Array.isArray(body.config) ? body.config as Record<string, unknown> : {});
   if (!v.ok) return Response.json({ error: v.error }, { status: 400 });
 
+  if (type === "webhook" || type === "slack") {
+    try { await resolveWebhook(v.config.url ?? v.config.webhookUrl); }
+    catch { return Response.json({ error: "Use a reachable public HTTPS webhook URL on port 443." }, { status: 400 }); }
+  }
   const [created] = await db.insert(alertChannels).values({ userId: user.id, type, config: v.config }).returning();
   return Response.json({ channel: created }, { status: 201 });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }

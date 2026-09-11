@@ -1,4 +1,5 @@
-import { and, desc, eq } from "drizzle-orm";
+import { readObject } from "@/lib/request";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db";
 import { checks, domains, events } from "@/db/schema";
 import { getCurrentUser, unauthorized } from "@/lib/auth";
@@ -11,6 +12,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** GET /api/domains/[id] — domain + full check history + events timeline. */
 export async function GET(_req: Request, { params }: Params) {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
 
@@ -25,15 +27,21 @@ export async function GET(_req: Request, { params }: Params) {
   if (!domain) return Response.json({ error: "Not found" }, { status: 404 });
 
   const [history, timeline] = await Promise.all([
-    db.select().from(checks).where(eq(checks.domainId, id)).orderBy(desc(checks.checkedAt)).limit(500),
+    db.select().from(checks).where(and(eq(checks.domainId, id), gte(checks.checkedAt, new Date(Date.now() - 90 * 86400000)))).orderBy(desc(checks.checkedAt)),
     db.select().from(events).where(eq(events.domainId, id)).orderBy(desc(events.createdAt)).limit(200),
   ]);
 
   return Response.json({ domain, checks: history, events: timeline });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }
 
 /** DELETE /api/domains/[id] — stop monitoring and remove all history. */
 export async function DELETE(_req: Request, { params }: Params) {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
 
@@ -47,22 +55,24 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   if (!deleted.length) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json({ ok: true });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }
 
 /** PATCH /api/domains/[id] — pause / resume monitoring. */
 export async function PATCH(req: Request, { params }: Params) {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return Response.json({ error: "Not found" }, { status: 404 });
 
-  let body: { isActive?: boolean };
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const body = await readObject(req);
+  if (body instanceof Response) return body;
   if (typeof body.isActive !== "boolean") return Response.json({ error: "isActive must be boolean" }, { status: 400 });
 
   const [updated] = await db
@@ -73,4 +83,9 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (!updated) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json({ domain: updated });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }

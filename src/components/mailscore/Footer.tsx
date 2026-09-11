@@ -8,7 +8,7 @@ export function Footer() {
         <div>
           <Logo />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
-            Continuous deliverability & blacklist monitoring for teams who can&apos;t afford to land in spam. Real DNS checks, real alerts — 100% free, forever.
+            Continuous deliverability & blacklist monitoring for teams who can&apos;t afford to land in spam. Real DNS checks, real alerts — free to use.
           </p>
         </div>
         <div>
@@ -41,7 +41,7 @@ export function Footer() {
           <ul className="space-y-2.5 text-sm text-slate-600">
             <li>SPF · DKIM · DMARC</li>
             <li>MX topology & resolution</li>
-            <li>Spamhaus, Barracuda, SpamCop, SORBS</li>
+            <li>Spamhaus, Barracuda, SpamCop</li>
             <li>UCEPROTECT, PSBL, DroneBL, CBL</li>
           </ul>
         </div>

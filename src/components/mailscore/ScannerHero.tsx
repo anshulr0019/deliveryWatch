@@ -1,5 +1,6 @@
 "use client";
 
+import { ScanOptionsFields } from "@/components/dashboard/ScanOptionsFields";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, Radar, Search } from "lucide-react";
@@ -8,10 +9,12 @@ import { ResultBreakdown } from "./ResultBreakdown";
 import { SpotlightCard } from "./SpotlightCard";
 import type { MailScoreResult } from "@/lib/dns-check";
 
-const STEPS = ["Resolving SPF policy", "Probing DKIM selectors", "Reading DMARC record", "Mapping MX topology", "Querying 8 blacklists"];
+const STEPS = ["Resolving SPF policy", "Probing DKIM selectors", "Reading DMARC record", "Mapping MX topology", "Querying 7 blacklists"];
 
 export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const [domain, setDomain] = useState("");
+  const [selectors, setSelectors] = useState("");
+  const [sendingIp, setSendingIp] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
     setStep(0);
     const ticker = setInterval(() => setStep((s) => Math.min(STEPS.length - 1, s + 1)), 650);
     try {
-      const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
+      const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain: domain, dkimSelectors: selectors.split(",").map(s => s.trim()).filter(Boolean), sendingIp: sendingIp.trim() }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
       setResult(data as MailScoreResult);
@@ -50,7 +53,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
             Score any domain in <span className="text-[#0F372E]">seconds</span>
           </h2>
           <p className="mt-3 text-sm text-slate-600 sm:text-base">
-            Live DNS checks for SPF, DKIM, DMARC, MX and 8 real-time blacklists. Nothing is stored.
+            Live DNS checks for SPF, DKIM, DMARC, MX and 7 blacklist providers. Nothing is stored.
           </p>
         </div>
 
@@ -74,6 +77,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
             {!loading && <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
           </button>
         </form>
+        <ScanOptionsFields selectors={selectors} sendingIp={sendingIp} onSelectors={setSelectors} onSendingIp={setSendingIp} />
 
         {loading && (
           <div className="mx-auto mt-6 max-w-xl">
@@ -113,10 +117,10 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
                 <div className="eyebrow text-emerald-800">Result for</div>
                 <h3 className="font-display mt-1 text-2xl font-bold text-[#0B1311] sm:text-3xl">{result.domain}</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  <span className="text-slate-900 font-semibold">{result.tier}</span> · Estimated inbox placement{" "}
-                  <span className="text-emerald-700 font-bold">{result.inboxProbability}%</span> · Scanned in{" "}
+                  <span className="text-slate-900 font-semibold">{result.complete ? result.tier : "Partial DNS health score"}</span> · Scanned in{" "}
                   {(result.scanDurationMs / 1000).toFixed(1)}s
                 </p>
+                <p className="mt-2 text-xs text-slate-500">This score describes observed DNS configuration, not an inbox-placement probability. Unknown checks contribute no points.</p>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   {isAuthenticated ? (
                     <Link href={`/dashboard?add=${encodeURIComponent(result.domain)}`} className="btn-primary">
@@ -134,7 +138,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
                   </button>
                 </div>
                 <p className="mt-3 text-xs text-slate-500">
-                  Create a free account to get re-checks every 15 minutes, history charts and WhatsApp / Slack / email alerts.
+                  Create a free account to get re-checks every 15 minutes, history charts and Slack, email and webhook alerts.
                 </p>
               </div>
             </div>

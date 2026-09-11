@@ -1,10 +1,12 @@
+import { createHash, createPublicKey } from "node:crypto";
+import { isIP } from "node:net";
 import { Resolver } from "node:dns/promises";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type CheckStatus = "pass" | "warn" | "fail";
+export type CheckStatus = "pass" | "warn" | "fail" | "unknown";
 
 export interface SpfResult {
   score: number;
@@ -26,6 +28,8 @@ export interface DkimResult {
   found: boolean;
   keyBits: number | null;
   bestSelector: string | null;
+  keyFingerprint?: string;
+  selectors?: { selector: string; fingerprint: string }[];
   issues: string[];
   suggestions: string[];
 }
@@ -59,6 +63,8 @@ export interface RblResult {
   status: CheckStatus;
   ip: string | null;
   listedOn: string[];
+  source?: "configured" | "mx";
+  providers?: { name: string; status: "listed" | "clear" | "unavailable" }[];
   issues: string[];
   suggestions: string[];
 }
@@ -68,7 +74,7 @@ export interface MailScoreResult {
   totalScore: number;
   grade: "A+" | "A" | "B" | "C" | "D" | "F";
   tier: "Excellent" | "Good" | "Needs Improvement" | "Poor" | "Critical";
-  inboxProbability: number;
+  complete: boolean;
   spf: SpfResult;
   dkim: DkimResult;
   dmarc: DmarcResult;
@@ -89,25 +95,24 @@ function makeResolver() {
   return r;
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return new Promise((resolve) => {
-    const t = setTimeout(() => resolve(fallback), ms);
-    p.then((v) => {
-      clearTimeout(t);
-      resolve(v);
-    }).catch(() => {
-      clearTimeout(t);
-      resolve(fallback);
-    });
-  });
+async function dnsLookup<T>(promise: Promise<T>, empty: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([promise, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("DNS lookup timed out")), DNS_TIMEOUT_MS + 500);
+    })]);
+  } catch (error) {
+    if (["ENOTFOUND", "ENODATA"].includes((error as NodeJS.ErrnoException).code ?? "")) return empty;
+    throw error;
+  } finally { clearTimeout(timer); }
 }
 
 async function txt(resolver: Resolver, name: string): Promise<string[]> {
-  const res = await withTimeout(resolver.resolveTxt(name), DNS_TIMEOUT_MS + 500, [] as string[][]);
-  return res.map((chunks) => chunks.join(""));
+  return (await dnsLookup(resolver.resolveTxt(name), [] as string[][])).map((chunks) => chunks.join(""));
 }
 
-export function normalizeDomain(input: string): string | null {
+export function normalizeDomain(input: unknown): string | null {
+  if (typeof input !== "string") return null;
   let d = input.trim().toLowerCase();
   d = d.replace(/^[a-z]+:\/\//, "");
   d = d.replace(/^www\./, "");
@@ -154,93 +159,79 @@ function detectProvider(host: string): string | null {
 /*  SPF                                                                */
 /* ------------------------------------------------------------------ */
 
+/** Structural SPF audit. Without an envelope sender/IP this is not an SMTP SPF verdict. */
 async function checkSpf(resolver: Resolver, domain: string): Promise<SpfResult> {
-  const base: SpfResult = {
-    score: 0,
-    maxScore: 20,
-    status: "fail",
-    found: false,
-    record: null,
-    qualifier: null,
-    includes: [],
-    detectedProviders: [],
-    issues: [],
-    suggestions: [],
-  };
-
-  const records = await txt(resolver, domain);
-  const spfRecords = records.filter((r) => /^v=spf1(\s|$)/i.test(r.trim()));
-
-  if (spfRecords.length === 0) {
-    base.issues.push("No SPF record found on the root domain.");
-    base.suggestions.push(
-      `Add a TXT record on ${domain}: "v=spf1 include:<your-provider> -all" listing every service authorized to send email.`,
-    );
-    return base;
+  const base: SpfResult = { score: 0, maxScore: 20, status: "fail", found: false, record: null, qualifier: null, includes: [], detectedProviders: [], issues: [], suggestions: [] };
+  let lookupCount = 0;
+  let limited = false;
+  const recordsSeen: string[] = [];
+  async function audit(name: string, path: Set<string>): Promise<string | null> {
+    if (path.has(name)) throw new Error(`SPF include/redirect cycle at ${name}.`);
+    const records = (await txt(resolver, name)).filter(r => /^v=spf1(?:\s|$)/i.test(r));
+    if (name === domain) { base.found = records.length > 0; base.record = records[0] ?? null; }
+    if (records.length !== 1) throw new Error(records.length ? `Multiple SPF records at ${name}. Keep exactly one.` : `No SPF record at ${name}.`);
+    const record = records[0]; recordsSeen.push(record);
+    const terms = record.trim().split(/\s+/).slice(1);
+    const all = terms.find(t => /^[+~?-]?all$/i.test(t));
+    const redirects = terms.filter(t => /^redirect=/i.test(t));
+    if (redirects.length > 1) throw new Error(`Multiple redirect modifiers at ${name}.`);
+    const seenModifiers = new Set<string>();
+    for (const term of terms) {
+      if (/^[a-z][a-z0-9_.-]*=/i.test(term)) {
+        const key = term.split("=")[0].toLowerCase();
+        if (seenModifiers.has(key)) throw new Error(`Duplicate SPF modifier ${key}.`);
+        seenModifiers.add(key);
+        if (!term.slice(key.length + 1)) throw new Error(`Empty SPF modifier ${key}.`);
+        continue;
+      }
+      const mechanism = term.replace(/^[+~?-]/, "");
+      const ip = mechanism.match(/^(ip4|ip6):([^/]+)(?:\/(\d+))?$/i);
+      if (ip) {
+        const family = ip[1].toLowerCase() === "ip4" ? 4 : 6;
+        if (isIP(ip[2]) !== family || (ip[3] !== undefined && Number(ip[3]) > (family === 4 ? 32 : 128))) throw new Error(`Invalid SPF address: ${term}.`);
+      } else if (!/^(?:all|include:.+|exists:.+|ptr(?::.+)?|a(?::[^/]+)?(?:\/\d+)?(?:\/\/\d+)?|mx(?::[^/]+)?(?:\/\d+)?(?:\/\/\d+)?)$/i.test(mechanism)) {
+        throw new Error(`Unsupported or invalid SPF mechanism: ${term}.`);
+      }
+    }
+    for (const term of terms) {
+      if (/^[+~?-]?all$/i.test(term)) break; // later mechanisms are unreachable
+      const mechanism = term.replace(/^[+~?-]/, "");
+      if (/^(?:include:|a(?=[:/]|$)|mx(?=[:/]|$)|ptr(?=:|$)|exists:)/i.test(mechanism)) {
+        if (++lookupCount > 10) throw new Error("SPF exceeds the 10 DNS-lookup mechanism limit across includes/redirects.");
+      }
+      if (/^include:/i.test(mechanism)) {
+        const target = mechanism.slice(8).toLowerCase(); base.includes.push(target);
+        if (target.includes("%")) { limited = true; continue; }
+        if (!normalizeDomain(target)) throw new Error(`Invalid SPF include target: ${target}.`);
+        await audit(target, new Set([...path, name]));
+      } else if (/^(?:a|mx|ptr|exists)(?=[:/]|$)/i.test(mechanism)) {
+        // Sender-dependent mechanisms need a real SMTP identity for a full evaluation.
+        limited = true;
+      }
+    }
+    if (!all && redirects.length) {
+      if (++lookupCount > 10) throw new Error("SPF exceeds the 10 DNS-lookup mechanism limit.");
+      const target = redirects[0].slice(9).toLowerCase();
+      if (target.includes("%")) { limited = true; return null; }
+      if (!normalizeDomain(target)) throw new Error("Invalid SPF redirect target.");
+      return audit(target, new Set([...path, name]));
+    }
+    return all ? (all.length === 3 ? "+" : all[0]) : null;
   }
-
-  const record = spfRecords[0];
-  base.found = true;
-  base.record = record;
-
-  if (spfRecords.length > 1) {
-    base.issues.push(`Multiple SPF records found (${spfRecords.length}). RFC 7208 requires exactly one — receivers will treat this as a permanent error.`);
-    base.suggestions.push("Merge all SPF mechanisms into a single TXT record.");
+  try { base.qualifier = await audit(domain, new Set()); }
+  catch (error) {
+    // DNS transport errors are observations we could not make, never permanent DNS failures.
+    if ((error as NodeJS.ErrnoException).code || (error as Error).message.includes("timed out")) {
+      base.status = "unknown"; base.issues.push("SPF lookup unavailable. Retry before changing DNS."); return base;
+    }
+    base.issues.push((error as Error).message); base.suggestions.push("Correct the SPF record and its include/redirect targets, then scan again."); return base;
   }
-
-  const terms = record.split(/\s+/).slice(1);
-  const includes = terms.filter((t) => /^[+\-~?]?include:/i.test(t)).map((t) => t.replace(/^[+\-~?]?include:/i, ""));
-  base.includes = includes;
-  base.detectedProviders = Array.from(new Set(includes.map(detectProvider).filter((p): p is string => !!p)));
-
-  const allTerm = terms.find((t) => /^[+\-~?]?all$/i.test(t));
-  const qualifier = allTerm ? (allTerm.length === 3 ? "+" : allTerm[0]) : null;
-  base.qualifier = qualifier;
-
-  // DNS lookup count heuristic (include, a, mx, ptr, exists, redirect)
-  const lookupTerms = terms.filter((t) => /^[+\-~?]?(include:|a$|a:|mx$|mx:|ptr|exists:|redirect=)/i.test(t)).length;
-
-  let score = 20;
-  if (!allTerm) {
-    score -= 8;
-    base.issues.push("SPF record has no 'all' mechanism — unlisted senders are implicitly neutral.");
-    base.suggestions.push("Terminate your SPF record with '-all' (hard fail) or '~all' (soft fail).");
-  } else if (qualifier === "+") {
-    score -= 15;
-    base.issues.push("'+all' authorizes the entire internet to send as your domain.");
-    base.suggestions.push("Replace '+all' with '-all' immediately.");
-  } else if (qualifier === "?") {
-    score -= 8;
-    base.issues.push("'?all' (neutral) provides no protection against spoofing.");
-    base.suggestions.push("Use '~all' or, preferably, '-all'.");
-  } else if (qualifier === "~") {
-    score -= 3;
-    base.issues.push("'~all' (soft fail) is acceptable but weaker than a hard fail.");
-    base.suggestions.push("Once you have confirmed all legitimate senders are listed, move to '-all'.");
-  }
-
-  if (lookupTerms > 10) {
-    score -= 8;
-    base.issues.push(`SPF record likely exceeds the 10 DNS-lookup limit (${lookupTerms} lookup mechanisms found).`);
-    base.suggestions.push("Flatten includes or remove unused services to stay under 10 lookups.");
-  } else if (lookupTerms >= 8) {
-    score -= 2;
-    base.issues.push(`SPF record is close to the 10 DNS-lookup limit (${lookupTerms}).`);
-    base.suggestions.push("Audit includes before adding any new sending service.");
-  }
-
-  if (terms.some((t) => /^[+\-~?]?ptr/i.test(t))) {
-    score -= 3;
-    base.issues.push("The 'ptr' mechanism is deprecated and slow for receivers to evaluate.");
-    base.suggestions.push("Remove 'ptr' and use ip4/ip6/include instead.");
-  }
-
-  if (record.length > 255 && spfRecords.length === 1) {
-    base.issues.push("SPF string is longer than 255 characters; make sure it is split into multiple quoted strings.");
-  }
-
-  base.score = Math.max(0, Math.min(20, score));
+  base.detectedProviders = [...new Set([...base.includes, ...recordsSeen].map(detectProvider).filter((v): v is string => !!v))];
+  base.score = base.qualifier === "-" ? 20 : base.qualifier === "~" ? 17 : base.qualifier === "+" ? 0 : 10;
   base.status = base.score >= 17 ? "pass" : base.score >= 10 ? "warn" : "fail";
+  if (base.qualifier === "+") base.issues.push("+all authorizes every sender. Replace it after identifying legitimate senders.");
+  if (!base.qualifier) base.issues.push("No terminal all mechanism was resolved; unmatched senders may be neutral.");
+  if (limited) { base.status = "unknown"; base.issues.push("Sender-dependent mechanisms/macros need an envelope sender and sending IP. This domain-only audit cannot fully evaluate them."); }
   return base;
 }
 
@@ -287,86 +278,57 @@ const DKIM_SELECTORS = [
   "resend",
 ];
 
-function decodeKeyBits(p: string): number | null {
+export function parseDkimKey(record: string): { bits: number; fingerprint: string; algorithm: string } | null {
   try {
-    const buf = Buffer.from(p, "base64");
-    if (buf.length === 0) return null;
-    // Rough: DER-encoded SubjectPublicKeyInfo for RSA. Estimate modulus size.
-    // Common sizes: 1024-bit ~ 162 bytes, 2048-bit ~ 294 bytes, 4096-bit ~ 550 bytes
-    if (buf.length >= 500) return 4096;
-    if (buf.length >= 260) return 2048;
-    if (buf.length >= 140) return 1024;
-    if (buf.length >= 30) return 256; // ed25519
-    return null;
-  } catch {
-    return null;
-  }
+    const tags: Record<string, string> = {};
+    for (const item of record.split(";")) {
+      const equal = item.indexOf("="); if (equal < 0) continue;
+      const name = item.slice(0, equal).trim();
+      if (name in tags) return null;
+      tags[name] = item.slice(equal + 1).trim();
+    }
+    if (tags.v && tags.v !== "DKIM1") return null;
+    const p = (tags.p ?? "").replace(/\s/g, "");
+    if (!p || !/^[A-Za-z0-9+/]+={0,2}$/.test(p)) return null;
+    const key = Buffer.from(p, "base64");
+    if (key.toString("base64").replace(/=+$/, "") !== p.replace(/=+$/, "")) return null;
+    const algorithm = tags.k ?? "rsa";
+    let bits: number;
+    if (algorithm === "ed25519") { if (key.length !== 32) return null; bits = 256; }
+    else if (algorithm === "rsa") {
+      const publicKey = createPublicKey({ key, format: "der", type: "spki" });
+      if (publicKey.asymmetricKeyType !== "rsa") return null;
+      bits = publicKey.asymmetricKeyDetails?.modulusLength ?? 0;
+      if (!bits) return null;
+    } else return null;
+    return { bits, algorithm, fingerprint: createHash("sha256").update(key).digest("hex") };
+  } catch { return null; }
 }
 
-async function checkDkim(resolver: Resolver, domain: string): Promise<DkimResult> {
-  const base: DkimResult = {
-    score: 0,
-    maxScore: 20,
-    status: "fail",
-    found: false,
-    keyBits: null,
-    bestSelector: null,
-    issues: [],
-    suggestions: [],
-  };
-
-  const lookups = await Promise.all(
-    DKIM_SELECTORS.map(async (sel) => {
-      const recs = await txt(resolver, `${sel}._domainkey.${domain}`);
-      const rec = recs.find((r) => /v=DKIM1|p=/i.test(r));
-      return rec ? { sel, rec } : null;
-    }),
-  );
-
-  const found = lookups.filter((x): x is { sel: string; rec: string } => !!x);
-
-  if (found.length === 0) {
-    base.issues.push(`No DKIM public key found on ${DKIM_SELECTORS.length} common selectors.`);
-    base.suggestions.push("Enable DKIM signing in your email provider and publish the selector._domainkey TXT record it gives you.");
-    base.suggestions.push("If you use a custom selector, DKIM may be configured but undetectable by selector guessing.");
-    return base;
+async function checkDkim(resolver: Resolver, domain: string, selectors: string[] = []): Promise<DkimResult> {
+  const base: DkimResult = { score: 0, maxScore: 20, status: "unknown", found: false, keyBits: null, bestSelector: null, issues: [], suggestions: [] };
+  const names = selectors.length ? selectors : DKIM_SELECTORS;
+  const lookups = await Promise.allSettled(names.map(async selector => ({ selector, records: await txt(resolver, `${selector}._domainkey.${domain}`) })));
+  const found = lookups.flatMap(r => r.status === "fulfilled" ? r.value.records.filter(rec => /(?:^|;)\s*(?:v=DKIM1|p=)/.test(rec)).map(record => ({ selector: r.value.selector, record })) : []);
+  base.found = found.length > 0;
+  const parsed = found.map(f => ({ ...f, key: parseDkimKey(f.record) }));
+  const valid = parsed.filter(f => f.key && (f.key.algorithm === "ed25519" || f.key.bits >= 1024));
+  valid.sort((a, b) => (b.key!.algorithm === "ed25519" ? 2048 : b.key!.bits) - (a.key!.algorithm === "ed25519" ? 2048 : a.key!.bits));
+  base.selectors = parsed.map(f => ({ selector: f.selector, fingerprint: createHash("sha256").update(f.record.replace(/\s/g, "")).digest("hex") })).sort((a,b) => a.selector.localeCompare(b.selector));
+  const best = valid[0];
+  if (best?.key) {
+    base.bestSelector = best.selector; base.keyBits = best.key.bits; base.keyFingerprint = best.key.fingerprint;
+    base.score = best.key.algorithm === "ed25519" || best.key.bits >= 2048 ? 20 : 14;
+    base.status = base.score === 20 ? "pass" : "warn";
+    if (base.score < 20) base.suggestions.push("Consider rotating RSA keys to 2048 bits.");
+    if (parsed.some(f => !f.key)) { base.status = "warn"; base.issues.push("Another discovered selector contains an invalid or revoked key. Review its use before removal."); }
+  } else if (found.length || selectors.length) {
+    base.status = "fail"; base.issues.push(found.length ? "Discovered DKIM keys are invalid, revoked, or below the minimum RSA key size." : "No DKIM key found at the configured selectors.");
+  } else {
+    base.issues.push("No key discovered on common selectors. This does not prove DKIM is missing.");
+    base.suggestions.push("Enter your provider's DKIM selector for an explicit lookup. DNS presence alone does not verify message signing.");
   }
-
-  base.found = true;
-
-  let best: { sel: string; bits: number | null; revoked: boolean } | null = null;
-  for (const f of found) {
-    const pMatch = f.rec.match(/(?:^|;)\s*p=([^;]*)/i);
-    const p = pMatch ? pMatch[1].replace(/\s+/g, "") : "";
-    const revoked = p.length === 0;
-    const bits = revoked ? null : decodeKeyBits(p);
-    if (!best || (bits ?? 0) > (best.bits ?? 0)) best = { sel: f.sel, bits, revoked };
-  }
-
-  base.bestSelector = best?.sel ?? found[0].sel;
-  base.keyBits = best?.bits ?? null;
-
-  let score = 20;
-  if (best?.revoked) {
-    score = 4;
-    base.issues.push(`Selector '${best.sel}' has an empty public key (revoked).`);
-    base.suggestions.push("Rotate to a fresh DKIM key pair and publish the new public key.");
-  } else if (base.keyBits !== null && base.keyBits < 1024) {
-    score = 8;
-    base.issues.push(`DKIM key is very short (${base.keyBits}-bit).`);
-    base.suggestions.push("Rotate to a 2048-bit RSA key.");
-  } else if (base.keyBits === 1024) {
-    score = 14;
-    base.issues.push("DKIM key is 1024-bit. Google and Microsoft recommend 2048-bit keys.");
-    base.suggestions.push("Rotate to a 2048-bit RSA key in your provider's DKIM settings.");
-  }
-
-  if (found.length === 1) {
-    base.suggestions.push("Consider publishing a second selector to enable zero-downtime key rotation.");
-  }
-
-  base.score = Math.max(0, Math.min(20, score));
-  base.status = base.score >= 17 ? "pass" : base.score >= 10 ? "warn" : "fail";
+  if (lookups.some(r => r.status === "rejected")) { base.status = "unknown"; base.issues.push("Some DKIM lookups were unavailable. Retry before changing DNS."); }
   return base;
 }
 
@@ -415,7 +377,7 @@ async function checkDmarc(resolver: Resolver, domain: string): Promise<DmarcResu
   else if (policy === "quarantine") score = 16;
   else if (policy === "none") {
     score = 9;
-    base.issues.push("Policy is 'p=none' — spoofed mail is monitored but still delivered.");
+    base.issues.push("Policy is 'p=none' — no quarantine/rejection is requested by DMARC; receivers apply their own filtering.");
     base.suggestions.push("Move to 'p=quarantine' and then 'p=reject' once your aggregate reports show only legitimate sources.");
   } else {
     score = 3;
@@ -424,7 +386,7 @@ async function checkDmarc(resolver: Resolver, domain: string): Promise<DmarcResu
   }
 
   if (dmarc.length > 1) {
-    score -= 6;
+    score = 0;
     base.issues.push("Multiple DMARC records found — receivers will ignore all of them.");
     base.suggestions.push("Keep exactly one _dmarc TXT record.");
   }
@@ -470,10 +432,10 @@ async function checkMx(resolver: Resolver, domain: string): Promise<MxResult> {
     suggestions: [],
   };
 
-  const mx = await withTimeout(resolver.resolveMx(domain), DNS_TIMEOUT_MS + 500, [] as { priority: number; exchange: string }[]);
+  const mx = await dnsLookup(resolver.resolveMx(domain), [] as { priority: number; exchange: string }[]);
 
   if (mx.length === 0) {
-    base.issues.push("No MX records found — this domain cannot receive email (and bounces/replies will fail).");
+    base.issues.push("No explicit MX records found. Inbound SMTP may fall back to the domain address; confirm routing with your provider.");
     base.suggestions.push("Publish MX records pointing at your mail provider's inbound servers.");
     return base;
   }
@@ -489,12 +451,6 @@ async function checkMx(resolver: Resolver, domain: string): Promise<MxResult> {
   base.hasBackup = sorted.length > 1;
 
   let score = 20;
-  if (sorted.length === 1) {
-    score -= 3;
-    base.issues.push("Only one MX record — no redundancy if the mail server is unreachable.");
-    base.suggestions.push("Add a secondary MX with a higher priority value.");
-  }
-
   const nullMx = sorted.some((r) => r.exchange === "" || r.exchange === ".");
   if (nullMx) {
     score = 2;
@@ -510,8 +466,8 @@ async function checkMx(resolver: Resolver, domain: string): Promise<MxResult> {
 
   // Verify at least the primary MX resolves.
   const primaryHost = base.records[0].exchange;
-  const addrs = await withTimeout(resolver.resolve4(primaryHost), DNS_TIMEOUT_MS + 500, [] as string[]);
-  const addrs6 = addrs.length ? [] : await withTimeout(resolver.resolve6(primaryHost), DNS_TIMEOUT_MS + 500, [] as string[]);
+  const addrs = nullMx ? [] : await dnsLookup(resolver.resolve4(primaryHost), [] as string[]);
+  const addrs6 = nullMx || addrs.length ? [] : await dnsLookup(resolver.resolve6(primaryHost), [] as string[]);
   if (!addrs.length && !addrs6.length && !nullMx) {
     score -= 8;
     base.issues.push(`Primary MX host ${primaryHost} does not resolve to an IP address.`);
@@ -531,66 +487,38 @@ export const RBL_ZONES = [
   { zone: "zen.spamhaus.org", name: "Spamhaus ZEN" },
   { zone: "b.barracudacentral.org", name: "Barracuda" },
   { zone: "bl.spamcop.net", name: "SpamCop" },
-  { zone: "dnsbl.sorbs.net", name: "SORBS" },
   { zone: "dnsbl-1.uceprotect.net", name: "UCEPROTECT L1" },
   { zone: "psbl.surriel.com", name: "PSBL" },
   { zone: "dnsbl.dronebl.org", name: "DroneBL" },
   { zone: "cbl.abuseat.org", name: "CBL Abuseat" },
 ] as const;
 
-async function checkRbl(resolver: Resolver, domain: string, mxHosts: string[]): Promise<RblResult> {
-  const base: RblResult = {
-    score: 20,
-    maxScore: 20,
-    status: "pass",
-    ip: null,
-    listedOn: [],
-    issues: [],
-    suggestions: [],
-  };
-
-  // Determine the IP to test: primary MX A record, else domain A record.
-  let ip: string | null = null;
-  for (const host of [...mxHosts, domain]) {
-    const a = await withTimeout(resolver.resolve4(host), DNS_TIMEOUT_MS + 500, [] as string[]);
-    if (a.length) {
-      ip = a[0];
-      break;
+async function checkRbl(resolver: Resolver, mxHosts: string[], sendingIp?: string): Promise<RblResult> {
+  const base: RblResult = { score: 0, maxScore: 20, status: "unknown", ip: sendingIp ?? null, source: sendingIp ? "configured" : "mx", listedOn: [], issues: [], suggestions: [] };
+  if (!base.ip) {
+    for (const host of mxHosts.slice(0, 3)) {
+      try { base.ip = (await dnsLookup(resolver.resolve4(host), [] as string[]))[0] ?? null; } catch { /* next MX may resolve */ }
+      if (base.ip) break;
     }
+    base.suggestions.push("This is an inbound MX address, not a verified outbound sender. Configure a sending IPv4 address to monitor its reputation.");
   }
-
-  if (!ip) {
-    base.score = 12;
-    base.status = "warn";
-    base.issues.push("Could not determine a sending/receiving IPv4 address to check against blacklists.");
-    base.suggestions.push("Ensure your MX hostnames resolve to public IPv4 addresses.");
-    return base;
-  }
-
-  base.ip = ip;
-  const reversed = ip.split(".").reverse().join(".");
-
-  const results = await Promise.all(
-    RBL_ZONES.map(async (z) => {
-      const answer = await withTimeout(resolver.resolve4(`${reversed}.${z.zone}`), DNS_TIMEOUT_MS + 500, null as string[] | null);
-      if (!answer || answer.length === 0) return null;
-      // Only 127.0.0.x style answers are real listings; some zones return 127.255.255.x for errors/blocked queries.
-      const listed = answer.some((a) => a.startsWith("127.") && !a.startsWith("127.255."));
-      return listed ? (z.name as string) : null;
-    }),
-  );
-
-  base.listedOn = results.filter((r): r is string => typeof r === "string");
-
-  if (base.listedOn.length > 0) {
-    const critical = base.listedOn.some((n) => /Spamhaus|Barracuda|SpamCop/.test(n));
-    base.score = critical ? 0 : Math.max(0, 20 - base.listedOn.length * 6);
-    base.status = base.score >= 10 ? "warn" : "fail";
-    base.issues.push(`IP ${ip} is listed on ${base.listedOn.length} blacklist${base.listedOn.length > 1 ? "s" : ""}: ${base.listedOn.join(", ")}.`);
-    base.suggestions.push("Identify the source of abuse (compromised account, open relay, misconfigured forwarder) and stop it first.");
-    base.suggestions.push("Request delisting via each blacklist's removal form once the issue is resolved.");
-  }
-
+  if (!base.ip) { base.issues.push("No IPv4 address available for reputation checks."); return base; }
+  const reversed = base.ip.split(".").reverse().join(".");
+  base.providers = await Promise.all(RBL_ZONES.map(async z => {
+    try {
+      const answer = await dnsLookup(resolver.resolve4(`${reversed}.${z.zone}`), [] as string[]);
+      const listed = answer.some(a => /^127\.0\.0\.\d+$/.test(a));
+      const status = listed ? "listed" : answer.length ? "unavailable" : "clear";
+      return { name: z.name as string, status: status as "listed" | "clear" | "unavailable" };
+    } catch { return { name: z.name as string, status: "unavailable" as const }; }
+  }));
+  base.listedOn = base.providers.filter(p => p.status === "listed").map(p => p.name);
+  const unavailable = base.providers.filter(p => p.status === "unavailable");
+  if (base.listedOn.length) {
+    base.status = "fail"; base.score = 0;
+    base.issues.push(`IP ${base.ip} is listed on ${base.listedOn.join(", ")}. Confirm the address belongs to your sending infrastructure before acting.`);
+  } else if (!unavailable.length) { base.status = "pass"; base.score = 20; }
+  if (unavailable.length) base.issues.push(`Could not verify: ${unavailable.map(p => p.name).join(", ")}. Unavailable queries are not clean results.`);
   return base;
 }
 
@@ -615,47 +543,40 @@ export function tierFor(total: number): MailScoreResult["tier"] {
   return "Critical";
 }
 
-export async function checkDomain(rawDomain: string): Promise<MailScoreResult> {
+export interface ScanOptions { dkimSelectors?: string[]; sendingIp?: string; }
+
+export function parseScanOptions(input: Record<string, unknown>): ScanOptions {
+  const selectors = input.dkimSelectors ?? [];
+  if (!Array.isArray(selectors) || selectors.length > 5 || selectors.some(s => typeof s !== "string" || !/^[a-zA-Z0-9_-]{1,63}(?:\.[a-zA-Z0-9_-]{1,63})*$/.test(s) || s.length > 120)) throw new Error("Use up to five valid DKIM selectors.");
+  const sendingIp = input.sendingIp;
+  if (sendingIp !== undefined && sendingIp !== "" && (typeof sendingIp !== "string" || isIP(sendingIp) !== 4)) throw new Error("Sending IP must be an IPv4 address.");
+  return { dkimSelectors: [...new Set(selectors as string[])], ...(sendingIp ? { sendingIp: sendingIp as string } : {}) };
+}
+
+export async function checkDomain(rawDomain: string, options: ScanOptions = {}): Promise<MailScoreResult> {
   const started = Date.now();
   const domain = normalizeDomain(rawDomain);
   if (!domain) throw new Error("Invalid domain name");
-
   const resolver = makeResolver();
-
-  const [spf, dkim, dmarc, mx] = await Promise.all([
-    checkSpf(resolver, domain),
-    checkDkim(resolver, domain),
-    checkDmarc(resolver, domain),
-    checkMx(resolver, domain),
-  ]);
-
-  const rbl = await checkRbl(
-    resolver,
-    domain,
-    mx.records.map((r) => r.exchange),
-  );
-
-  const totalScore = Math.max(0, Math.min(100, spf.score + dkim.score + dmarc.score + mx.score + rbl.score));
-
-  // Inbox probability: weighted; blacklisting is disproportionately damaging.
-  let inbox = totalScore;
-  if (rbl.listedOn.length > 0) inbox = Math.min(inbox, 35);
-  if (!spf.found && !dkim.found) inbox = Math.min(inbox, 45);
-  if (!mx.found) inbox = Math.min(inbox, 30);
-  const inboxProbability = Math.round(Math.max(2, Math.min(99, inbox)));
-
-  return {
-    domain,
-    totalScore,
-    grade: gradeFor(totalScore),
-    tier: tierFor(totalScore),
-    inboxProbability,
-    spf,
-    dkim,
-    dmarc,
-    mx,
-    rbl,
-    scannedAt: new Date().toISOString(),
-    scanDurationMs: Date.now() - started,
-  };
+  // On transport failure return an explicit unknown result, with the same shape as a missing record.
+  async function observe<T extends { status: CheckStatus; score: number; issues: string[] }>(run: (r: Resolver) => Promise<T>): Promise<T> {
+    try { return await run(resolver); }
+    catch {
+      const empty = { resolveTxt: async () => [], resolveMx: async () => [], resolve4: async () => [], resolve6: async () => [] } as unknown as Resolver;
+      const result = await run(empty);
+      return { ...result, status: "unknown", score: 0, issues: ["DNS lookup unavailable. Retry before changing records."], suggestions: [] };
+    }
+  }
+  const deadline = setTimeout(() => resolver.cancel(), 18000);
+  try {
+    const [spf, dkim, dmarc, mx] = await Promise.all([
+      observe(r => checkSpf(r, domain)), observe(r => checkDkim(r, domain, options.dkimSelectors)),
+      observe(r => checkDmarc(r, domain)), observe(r => checkMx(r, domain)),
+    ]);
+    const rbl = await checkRbl(resolver, mx.records.map(r => r.exchange), options.sendingIp);
+    for (const result of [spf, dkim, dmarc, mx, rbl]) if (result.status === "unknown") result.score = 0;
+    const totalScore = spf.score + dkim.score + dmarc.score + mx.score + rbl.score;
+    const complete = [spf, dkim, dmarc, mx, rbl].every(r => r.status !== "unknown") && !rbl.providers?.some(p => p.status === "unavailable");
+    return { domain, totalScore, grade: gradeFor(totalScore), tier: tierFor(totalScore), complete, spf, dkim, dmarc, mx, rbl, scannedAt: new Date().toISOString(), scanDurationMs: Date.now() - started };
+  } finally { clearTimeout(deadline); resolver.cancel(); }
 }

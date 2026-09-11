@@ -69,12 +69,14 @@ export function ResultBreakdown({ result, compact = false }: { result: MailScore
       />
       <CheckCard
         title="RBL"
-        subtitle="Blacklist Reputation (8 lists)"
+        subtitle="Blacklist Reputation (7 lists)"
         status={rbl.status}
         score={rbl.score}
         facts={[
           { label: "Tested IP", value: rbl.ip ?? "—" },
-          { label: "Listed on", value: rbl.listedOn.length ? rbl.listedOn.join(", ") : "None" },
+          { label: "Listed on", value: rbl.listedOn.length ? rbl.listedOn.join(", ") : "None reported" },
+          { label: "IP source", value: rbl.source === "configured" ? "Configured sender" : "Inbound MX" },
+          { label: "Coverage", value: rbl.providers ? `${rbl.providers.filter(p => p.status !== "unavailable").length}/${rbl.providers.length} answered` : "Not recorded" },
         ]}
         issues={rbl.issues}
         suggestions={rbl.suggestions}

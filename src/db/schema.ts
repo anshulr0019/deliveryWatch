@@ -21,6 +21,7 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull().unique(),
   fullName: text("full_name"),
   passwordHash: text("password_hash"),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   googleId: text("google_id").unique(),
   avatarUrl: text("avatar_url"),
   plan: text("plan").notNull().default("community"),
@@ -49,6 +50,10 @@ export const domains = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     domain: text("domain").notNull(),
+    scanOptions: jsonb("scan_options").notNull().default({}),
+    nextCheckAt: timestamp("next_check_at", { withTimezone: true }).notNull().defaultNow(),
+    checkLeaseUntil: timestamp("check_lease_until", { withTimezone: true }),
+    checkLeaseToken: uuid("check_lease_token"),
     isActive: boolean("is_active").notNull().default(true),
     latestScore: integer("latest_score").notNull().default(0),
     lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
@@ -103,7 +108,7 @@ export const alertChannels = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    type: text("type").notNull(), // 'email' | 'slack' | 'whatsapp' | 'webhook'
+    type: text("type").notNull(), // 'email' | 'slack' | 'webhook'
     config: jsonb("config").notNull().default({}),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -116,3 +121,32 @@ export type Domain = typeof domains.$inferSelect;
 export type Check = typeof checks.$inferSelect;
 export type DomainEvent = typeof events.$inferSelect;
 export type AlertChannel = typeof alertChannels.$inferSelect;
+
+/** Fixed windows live in PostgreSQL so limits apply across serverless instances. */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export const alertDeliveries = pgTable("alert_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  channelId: uuid("channel_id").notNull().references(() => alertChannels.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  context: jsonb("context").notNull(),
+  status: text("status").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  leaseToken: uuid("lease_token"),
+  lastError: text("last_error"),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [unique("delivery_event_channel_unique").on(t.eventId, t.channelId), index("deliveries_due_idx").on(t.status, t.nextAttemptAt)]);
+
+export const emailVerifications = pgTable("email_verifications", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});

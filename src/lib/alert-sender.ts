@@ -1,32 +1,19 @@
+import { postWebhook } from "@/lib/safe-webhook";
 import { createHmac } from "node:crypto";
-import { eq, and } from "drizzle-orm";
-import { db } from "@/db";
-import { alertChannels, type AlertChannel } from "@/db/schema";
+import { type AlertChannel } from "@/db/schema";
 import type { DetectedEvent } from "@/lib/change-detector";
 
 export interface AlertContext {
+  deliveryId?: string;
   domain: string;
   domainId: string;
   score: number;
   previousScore?: number;
   event: DetectedEvent;
 }
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const SEVERITY_EMOJI: Record<string, string> = { critical: "🚨", warning: "⚠️", info: "ℹ️" };
 const SEVERITY_COLOR: Record<string, string> = { critical: "#F87171", warning: "#FBBF24", info: "#C8A96E" };
-
-/* ---------------------------- rate limiting ---------------------------- */
-// Max 10 alerts per user per hour (in-memory; sufficient per serverless instance / cron run).
-const rateBuckets = new Map<string, number[]>();
-function allow(userId: string): boolean {
-  const now = Date.now();
-  const arr = (rateBuckets.get(userId) ?? []).filter((t) => now - t < 3_600_000);
-  if (arr.length >= 10) return false;
-  arr.push(now);
-  rateBuckets.set(userId, arr);
-  return true;
-}
 
 /* ------------------------------ templates ------------------------------ */
 
@@ -72,18 +59,13 @@ async function sendEmail(to: string, ctx: AlertContext) {
     console.warn("[alerts] RESEND_API_KEY not set — skipping email to", to);
     return { ok: false, reason: "RESEND_API_KEY missing" };
   }
-  const { Resend } = await import("resend");
-  const resend = new Resend(key);
-  const from = process.env.ALERT_FROM_EMAIL ?? "DeliveryWatch <alerts@resend.dev>";
-  const { error } = await resend.emails.send({
-    from,
-    to,
-    subject: `${SEVERITY_EMOJI[ctx.event.severity] ?? ""} [${ctx.event.severity}] ${ctx.domain} — ${ctx.event.title}`,
-    html: emailHtml(ctx),
-    text: plainText(ctx),
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST", signal: AbortSignal.timeout(8000),
+    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json", ...(ctx.deliveryId ? { "Idempotency-Key": ctx.deliveryId } : {}) },
+    body: JSON.stringify({ from: process.env.ALERT_FROM_EMAIL ?? "DeliveryWatch <onboarding@resend.dev>", to: [to],
+      subject: `[${ctx.event.severity}] ${ctx.domain} — ${ctx.event.title}`, html: emailHtml(ctx), text: plainText(ctx) }),
   });
-  if (error) return { ok: false, reason: error.message };
-  return { ok: true };
+  return { ok: res.ok, reason: res.ok ? undefined : `Email provider responded ${res.status}` };
 }
 
 async function sendSlack(webhookUrl: string, ctx: AlertContext) {
@@ -111,33 +93,11 @@ async function sendSlack(webhookUrl: string, ctx: AlertContext) {
       },
     ],
   };
-  const res = await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  return { ok: res.ok, reason: res.ok ? undefined : `Slack responded ${res.status}` };
+  return postWebhook(webhookUrl, JSON.stringify(payload), { "Content-Type": "application/json" });
 }
 
 function escapeSlack(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-async function sendWhatsApp(toNumber: string, ctx: AlertContext) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_NUMBER;
-  if (!sid || !token || !from) {
-    console.warn("[alerts] Twilio env not set — skipping WhatsApp to", toNumber);
-    return { ok: false, reason: "Twilio credentials missing" };
-  }
-  const to = toNumber.startsWith("whatsapp:") ? toNumber : `whatsapp:${toNumber}`;
-  const body = new URLSearchParams({ From: from, To: to, Body: plainText(ctx) });
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
-  return { ok: res.ok, reason: res.ok ? undefined : `Twilio responded ${res.status}` };
 }
 
 async function sendWebhook(url: string, secret: string | undefined, ctx: AlertContext) {
@@ -152,9 +112,9 @@ async function sendWebhook(url: string, secret: string | undefined, ctx: AlertCo
     dashboardUrl: `${SITE_URL}/dashboard/${ctx.domainId}`,
   });
   const headers: Record<string, string> = { "Content-Type": "application/json", "User-Agent": "DeliveryWatch/1.0" };
+  if (ctx.deliveryId) headers["X-DeliveryWatch-Delivery"] = ctx.deliveryId;
   if (secret) headers["X-DeliveryWatch-Signature"] = `sha256=${createHmac("sha256", secret).update(payload).digest("hex")}`;
-  const res = await fetch(url, { method: "POST", headers, body: payload });
-  return { ok: res.ok, reason: res.ok ? undefined : `Webhook responded ${res.status}` };
+  return postWebhook(url, payload, headers);
 }
 
 /* ------------------------------ dispatcher ----------------------------- */
@@ -170,9 +130,11 @@ export async function dispatchToChannels(channels: AlertChannel[], ctx: AlertCon
   const results: DispatchResult[] = [];
   for (const ch of channels) {
     if (!ch.isActive) continue;
+    // Ignore channel types from older installations that are no longer supported.
+    if (ch.type !== "email" && ch.type !== "slack" && ch.type !== "webhook") continue;
     const cfg = (ch.config ?? {}) as Record<string, string | undefined>;
     try {
-      let r: { ok: boolean; reason?: string };
+      let r: { ok: boolean; reason?: string } = { ok: false, reason: "Unsupported channel type" };
       switch (ch.type) {
         case "email":
           r = cfg.email ? await sendEmail(cfg.email, ctx) : { ok: false, reason: "No email configured" };
@@ -180,14 +142,9 @@ export async function dispatchToChannels(channels: AlertChannel[], ctx: AlertCon
         case "slack":
           r = cfg.webhookUrl ? await sendSlack(cfg.webhookUrl, ctx) : { ok: false, reason: "No webhook URL configured" };
           break;
-        case "whatsapp":
-          r = cfg.phone ? await sendWhatsApp(cfg.phone, ctx) : { ok: false, reason: "No phone configured" };
-          break;
         case "webhook":
           r = cfg.url ? await sendWebhook(cfg.url, cfg.secret, ctx) : { ok: false, reason: "No URL configured" };
           break;
-        default:
-          r = { ok: false, reason: `Unknown channel type ${ch.type}` };
       }
       results.push({ channelId: ch.id, type: ch.type, ...r });
     } catch (err) {
@@ -195,21 +152,4 @@ export async function dispatchToChannels(channels: AlertChannel[], ctx: AlertCon
     }
   }
   return results;
-}
-
-/**
- * Load a user's active channels and dispatch an alert for a warning/critical event.
- */
-export async function sendAlertsForUser(userId: string, ctx: AlertContext): Promise<DispatchResult[]> {
-  if (ctx.event.severity === "info") return [];
-  if (!allow(userId)) {
-    console.warn(`[alerts] rate limit reached for user ${userId}`);
-    return [];
-  }
-  const channels = await db
-    .select()
-    .from(alertChannels)
-    .where(and(eq(alertChannels.userId, userId), eq(alertChannels.isActive, true)));
-  if (channels.length === 0) return [];
-  return dispatchToChannels(channels, ctx);
 }

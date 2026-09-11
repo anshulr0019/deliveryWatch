@@ -1,3 +1,4 @@
+import { safeNext as normalizeNext } from "@/lib/request";
 import { NextResponse, type NextRequest } from "next/server";
 import { randomBytes } from "node:crypto";
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   }
 
   const next = req.nextUrl.searchParams.get("next");
-  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  const safeNext = normalizeNext(next);
 
   // Generate cryptographically random state to prevent CSRF attacks
   const state = randomBytes(24).toString("hex");

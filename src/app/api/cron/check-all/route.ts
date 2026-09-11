@@ -1,80 +1,36 @@
-import { eq } from "drizzle-orm";
+import { asc, eq, and, sql } from "drizzle-orm";
+import { timingSafeEqual } from "node:crypto";
 import { db } from "@/db";
 import { domains } from "@/db/schema";
-import { runMonitoredCheck } from "@/lib/monitor";
+import { runMonitoredCheck, CheckBusyError } from "@/lib/monitor";
+import { drainAlertOutbox } from "@/lib/alert-outbox";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const BATCH_SIZE = 10;
-const PER_DOMAIN_TIMEOUT_MS = 25_000;
-
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("timeout")), ms);
-    p.then((v) => {
-      clearTimeout(t);
-      resolve(v);
-    }).catch((e) => {
-      clearTimeout(t);
-      reject(e);
-    });
-  });
-}
-
-function isAuthorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    // Without a configured secret, only allow in non-production (local dev / sandbox).
-    return process.env.NODE_ENV !== "production" || process.env.ALLOW_UNPROTECTED_CRON === "true";
-  }
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
-}
-
-/**
- * GET|POST /api/cron/check-all — scheduled monitoring sweep.
- * Protected with `Authorization: Bearer ${CRON_SECRET}` (Vercel Cron sends this automatically).
- */
 async function handler(req: Request) {
-  if (!isAuthorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401 });
-
+  const expected = Buffer.from(`Bearer ${process.env.CRON_SECRET ?? ""}`);
+  const actual = Buffer.from(req.headers.get("authorization") ?? "");
+  if (!process.env.CRON_SECRET || actual.length !== expected.length || !timingSafeEqual(actual, expected)) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const started = Date.now();
-  const active = await db.select().from(domains).where(eq(domains.isActive, true));
-
-  const summary = {
-    total: active.length,
-    checked: 0,
-    failed: 0,
-    eventsCreated: 0,
-    alertsTriggered: 0,
-    failures: [] as { domain: string; error: string }[],
-  };
-
-  for (let i = 0; i < active.length; i += BATCH_SIZE) {
-    const batch = active.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(
-      batch.map((d) =>
-        withTimeout(
-          runMonitoredCheck({ domainId: d.id, domainName: d.domain, userId: d.userId, sendAlerts: true }),
-          PER_DOMAIN_TIMEOUT_MS,
-        ),
-      ),
-    );
-
-    results.forEach((r, idx) => {
-      if (r.status === "fulfilled") {
-        summary.checked += 1;
-        summary.eventsCreated += r.value.events.length;
-        summary.alertsTriggered += r.value.events.filter((e) => e.severity !== "info").length;
-      } else {
-        summary.failed += 1;
-        summary.failures.push({ domain: batch[idx].domain, error: r.reason instanceof Error ? r.reason.message : String(r.reason) });
-      }
-    });
+  const summary = { checked: 0, failed: 0, skipped: 0, remaining: false, alerts: { sent: 0, failed: 0, retried: 0 } };
+  try {
+    // Check one bounded batch at a time. Per-domain leases and due times survive restarts.
+    while (Date.now() - started < 180000) {
+      const due = await db.select().from(domains).where(and(eq(domains.isActive, true), sql`${domains.nextCheckAt} <= now() AND (${domains.checkLeaseUntil} IS NULL OR ${domains.checkLeaseUntil} < now())`)).orderBy(asc(domains.nextCheckAt)).limit(5);
+      if (!due.length) break;
+      const outcomes = await Promise.allSettled(due.map(d => runMonitoredCheck({ domainId: d.id, domainName: d.domain, userId: d.userId, scheduled: true })));
+      for (const r of outcomes) { if (r.status === "fulfilled") summary.checked++; else if (r.reason instanceof CheckBusyError) summary.skipped++; else summary.failed++; }
+    }
+    const remaining = await db.select({ id: domains.id }).from(domains).where(and(eq(domains.isActive, true), sql`${domains.nextCheckAt} <= now()`)).limit(1);
+    summary.remaining = remaining.length > 0;
+    summary.alerts = await drainAlertOutbox(100, undefined, started + 270000);
+    await db.execute(sql`DELETE FROM rate_limits WHERE expires_at < now() - interval '1 day'`);
+    await db.execute(sql`DELETE FROM sessions WHERE expires_at < now()`);
+    return Response.json({ ok: summary.failed === 0, ...summary, durationMs: Date.now() - started }, { status: summary.failed ? 207 : 200 });
+  } catch (error) {
+    console.error("[cron] sweep failed", error);
+    return Response.json({ error: "Monitoring sweep failed.", ...summary }, { status: 503 });
   }
-
-  return Response.json({ ok: true, ...summary, durationMs: Date.now() - started, ranAt: new Date().toISOString() });
 }
-
 export { handler as GET, handler as POST };

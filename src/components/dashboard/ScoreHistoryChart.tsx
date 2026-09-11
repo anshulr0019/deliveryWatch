@@ -14,7 +14,7 @@ export function ScoreHistoryChart({ history }: { history: CheckPoint[] }) {
   const data = useMemo(() => {
     const since = referenceTime - range * 24 * 3600 * 1000;
     const filtered = history.filter((p) => new Date(p.t).getTime() >= since);
-    return (filtered.length ? filtered : history.slice(-1)).map((p) => ({ ...p, ts: new Date(p.t).getTime() }));
+    return filtered.map((p) => ({ ...p, ts: new Date(p.t).getTime() }));
   }, [history, range, referenceTime]);
 
   const min = data.length ? Math.min(...data.map((d) => d.score)) : 0;

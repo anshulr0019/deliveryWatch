@@ -2,10 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Hash, Loader2, Mail, MessageCircle, Plus, Send, Trash2, Webhook } from "lucide-react";
+import { Bell, Hash, Loader2, Mail, Plus, Send, Trash2, Webhook } from "lucide-react";
 import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
 
-export type ChannelType = "email" | "slack" | "whatsapp" | "webhook";
+export type ChannelType = "email" | "slack" | "webhook";
 
 export interface ChannelRow {
   id: string;
@@ -18,7 +18,6 @@ export interface ChannelRow {
 const TYPE_META: Record<ChannelType, { label: string; icon: typeof Mail; field: string; placeholder: string; help: string }> = {
   email: { label: "Email", icon: Mail, field: "email", placeholder: "alerts@yourcompany.com", help: "HTML alert emails via Resend." },
   slack: { label: "Slack", icon: Hash, field: "webhookUrl", placeholder: "https://hooks.slack.com/services/T000/B000/XXXX", help: "Create an Incoming Webhook in your Slack workspace and paste the URL." },
-  whatsapp: { label: "WhatsApp", icon: MessageCircle, field: "phone", placeholder: "+14155551234", help: "E.164 format. Delivered via the Twilio WhatsApp API." },
   webhook: { label: "Webhook", icon: Webhook, field: "url", placeholder: "https://api.yourapp.com/deliverywatch", help: "JSON POST with an optional HMAC-SHA256 signature header." },
 };
 
@@ -28,14 +27,12 @@ function describe(c: ChannelRow) {
       return c.config.email;
     case "slack":
       return c.config.webhookUrl?.replace(/^https:\/\/hooks\.slack\.com\/services\//, "…/").slice(0, 40) + "…";
-    case "whatsapp":
-      return c.config.phone;
     case "webhook":
       return c.config.url;
   }
 }
 
-export function AlertChannelsManager({ initialChannels, userEmail, integrations }: { initialChannels: ChannelRow[]; userEmail: string; integrations: { email: boolean; whatsapp: boolean } }) {
+export function AlertChannelsManager({ initialChannels, userEmail, integrations }: { initialChannels: ChannelRow[]; userEmail: string; integrations: { email: boolean } }) {
   const router = useRouter();
   const [channels, setChannels] = useState(initialChannels);
   const [type, setType] = useState<ChannelType>("email");
@@ -76,52 +73,35 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
     }
   };
 
-  const toggle = async (c: ChannelRow) => {
-    setBusy(c.id);
-    const res = await fetch(`/api/alerts/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !c.isActive }) });
-    if (res.ok) setChannels((list) => list.map((x) => (x.id === c.id ? { ...x, isActive: !c.isActive } : x)));
-    setBusy(null);
+  const perform = async (c: ChannelRow, method: "PATCH" | "DELETE" | "POST") => {
+    if (method === "DELETE" && !confirm("Remove this alert channel?")) return;
+    setBusy(c.id); setError(null);
+    try {
+      const res = await fetch(`/api/alerts/${c.id}`, { method, headers: { "Content-Type": "application/json" }, ...(method === "PATCH" ? { body: JSON.stringify({ isActive: !c.isActive }) } : {}) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Request failed. Please try again.");
+      if (method === "PATCH") setChannels(list => list.map(x => x.id === c.id ? { ...x, isActive: !c.isActive } : x));
+      if (method === "DELETE") setChannels(list => list.filter(x => x.id !== c.id));
+      if (method === "POST") setTestMsg(m => ({ ...m, [c.id]: data.result?.ok ? "Test accepted by provider ✓" : `Failed: ${data.result?.reason ?? "Unknown error"}` }));
+      router.refresh();
+    } catch (error) { setError(error instanceof Error ? error.message : "Network error. Please try again."); }
+    finally { setBusy(null); }
   };
-
-  const remove = async (c: ChannelRow) => {
-    if (!confirm("Remove this alert channel?")) return;
-    setBusy(c.id);
-    const res = await fetch(`/api/alerts/${c.id}`, { method: "DELETE" });
-    if (res.ok) setChannels((list) => list.filter((x) => x.id !== c.id));
-    setBusy(null);
-  };
-
-  const test = async (c: ChannelRow) => {
-    setBusy(c.id);
-    setTestMsg((m) => ({ ...m, [c.id]: "Sending…" }));
-    const res = await fetch(`/api/alerts/${c.id}`, { method: "POST" });
-    const data = await res.json().catch(() => ({}));
-    const r = data.result as { ok?: boolean; reason?: string } | undefined;
-    setTestMsg((m) => ({ ...m, [c.id]: r?.ok ? "Test alert sent ✓" : `Failed: ${r?.reason ?? "unknown error"}` }));
-    setBusy(null);
-  };
+  const toggle = (c: ChannelRow) => perform(c, "PATCH");
+  const remove = (c: ChannelRow) => perform(c, "DELETE");
+  const test = (c: ChannelRow) => perform(c, "POST");
 
   return (
     <div className="space-y-8">
       <div>
         <div className="eyebrow text-[#0F372E]">Alerts</div>
         <h1 className="font-display mt-1 text-3xl font-bold text-[#0B1311]">Alert channels</h1>
-        <p className="mt-1 text-sm text-slate-600">Every warning and critical event (blacklisting, score drops ≥15, SPF/DKIM/DMARC changes) is dispatched to all active channels.</p>
+        <p className="mt-1 text-sm text-slate-600">Warning and critical changes are queued for your active channels. Failed deliveries retry automatically; see recent delivery attempts below.</p>
       </div>
 
-      {(!integrations.email || !integrations.whatsapp) && (
+      {!integrations.email && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-900">
-          {!integrations.email && (
-            <p>
-              <strong>Email</strong> delivery needs <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">RESEND_API_KEY</code> on the server.
-            </p>
-          )}
-          {!integrations.whatsapp && (
-            <p className={!integrations.email ? "mt-1" : ""}>
-              <strong>WhatsApp</strong> delivery needs <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_ACCOUNT_SID</code>, <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_AUTH_TOKEN</code> and{" "}
-              <code className="rounded bg-white/80 border border-emerald-200 px-1 py-0.5">TWILIO_WHATSAPP_NUMBER</code>.
-            </p>
-          )}
+          <p><strong>Email</strong> delivery needs <code className="rounded border border-emerald-200 bg-white/80 px-1 py-0.5">RESEND_API_KEY</code> on the server.</p>
           <p className="mt-1 text-slate-600">Slack and generic webhooks work out of the box. Channels can be saved now and will deliver once keys are configured.</p>
         </div>
       )}

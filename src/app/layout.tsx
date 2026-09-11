@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Inter, Space_Grotesk } from "next/font/google";
 import "@/app/globals.css";
 import { SmoothScroll } from "@/components/mailscore/SmoothScroll";
 import { FilmGrain } from "@/components/mailscore/FilmGrain";
 import { LiveBackground } from "@/components/mailscore/LiveBackground";
 import { ScrollProgress } from "@/components/mailscore/ScrollProgress";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
 
 function getSiteUrl(): URL {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
@@ -26,7 +22,7 @@ function getSiteUrl(): URL {
 export const metadata: Metadata = {
   title: "DeliveryWatch — Continuous Deliverability & Blacklist Monitoring — 100% Free",
   description:
-    "Your domains are getting blacklisted. You just don't know it yet. DeliveryWatch monitors SPF, DKIM, DMARC, MX and 8 blacklists 24/7 and alerts you on WhatsApp, Slack or email. Free forever.",
+    "Understand your email DNS health. DeliveryWatch monitors SPF, DKIM, DMARC, MX and 7 blacklists 24/7 and alerts you on Slack, email or webhooks. Free to use.",
   metadataBase: getSiteUrl(),
   icons: {
     icon: "/icon.svg",
@@ -34,14 +30,14 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "DeliveryWatch — Free 24/7 Email Deliverability Monitoring",
-    description: "SPF, DKIM, DMARC, MX and blacklist monitoring with instant alerts. 100% free.",
+    description: "SPF, DKIM, DMARC, MX and blacklist monitoring with change alerts. 100% free.",
     type: "website",
   },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`light ${inter.variable} ${grotesk.variable}`}>
+    <html lang="en" className="light">
       <body className="relative min-h-screen bg-white text-slate-800 antialiased overflow-x-hidden selection:bg-emerald-100 selection:text-[#0F372E]">
         {/* Momentum smooth scrolling */}
         <SmoothScroll />

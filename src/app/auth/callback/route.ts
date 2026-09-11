@@ -1,3 +1,4 @@
+import { safeNext as normalizeNext } from "@/lib/request";
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   const next = req.nextUrl.searchParams.get("next");
-  const safeNext = next && next.startsWith("/") ? next : "/dashboard";
+  const safeNext = normalizeNext(next);
   const user = await getCurrentUser();
   const url = req.nextUrl.clone();
   url.search = "";

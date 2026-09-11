@@ -1,5 +1,6 @@
 "use client";
 
+import { safeNext } from "@/lib/request";
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2, Lock, Mail, User } from "lucide-react";
@@ -14,14 +15,16 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const next = params.get("next") && params.get("next")!.startsWith("/") ? params.get("next")! : "/dashboard";
+  const next = safeNext(params.get("next"));
 
   const getInitialError = () => {
     const code = params.get("error");
     if (!code) return null;
     switch (code) {
+      case "account_link_required":
+        return "An account with this email already exists. Sign in with your password.";
       case "google_not_configured":
-        return "Google Sign-In is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env.local.";
+        return "Google sign-in is currently unavailable. Please use email and password.";
       case "oauth_cancelled":
         return "Google sign-in was cancelled.";
       case "state_mismatch":
@@ -37,6 +40,7 @@ export function LoginForm() {
   };
 
   const [error, setError] = useState<string | null>(getInitialError());
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: FormEvent) => {
@@ -52,6 +56,7 @@ export function LoginForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+      if (data.verificationRequired) { setNotice(data.message); setMode("signin"); setLoading(false); return; }
       router.push(next);
       router.refresh();
     } catch (err) {
@@ -62,6 +67,7 @@ export function LoginForm() {
 
   return (
     <div className="w-full rounded-3xl border border-white/85 bg-white/80 p-7 shadow-[0_20px_50px_rgba(15,55,46,0.06),0_1px_2px_rgba(0,0,0,0.03)] backdrop-blur-2xl sm:p-9 font-apple">
+      {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</p>}
       {/* Smooth Glass Segmented Mode Switcher */}
       <div className="relative mb-6 grid grid-cols-2 rounded-xl bg-slate-200/50 p-1 text-xs font-medium backdrop-blur-md border border-white/60">
         {(["signin", "signup"] as Mode[]).map((m) => {
@@ -107,7 +113,7 @@ export function LoginForm() {
             <p className="mt-1 text-[13px] leading-snug text-[#86868b]">
               {mode === "signin"
                 ? "Sign in to your DeliveryWatch dashboard."
-                : "Unlimited domains, 15-minute re-checks, alerts on WhatsApp, Slack & email."}
+                : "Unlimited domains, 15-minute re-checks, alerts on Slack, email & webhooks."}
             </p>
           </motion.div>
         </AnimatePresence>
@@ -257,6 +263,13 @@ export function LoginForm() {
           </>
         )}
       </div>
+      <button type="button" className="mt-4 text-xs text-emerald-800 underline" disabled={loading || !email} onClick={async () => {
+        setLoading(true); setError(null);
+        try {
+          const res = await fetch("/api/auth/resend-verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+          const data = await res.json(); if (!res.ok) throw new Error(data.error); setNotice(data.message);
+        } catch (error) { setError(error instanceof Error ? error.message : "Please try again."); } finally { setLoading(false); }
+      }}>Resend verification email</button>
     </div>
   );
 }

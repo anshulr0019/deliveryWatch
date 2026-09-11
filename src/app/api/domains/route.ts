@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/domains — all monitored domains for the current user. */
 export async function GET() {
+  try {
   const user = await getCurrentUser();
   if (!user) return unauthorized();
 
@@ -22,4 +23,9 @@ export async function GET() {
       createdAt: d.createdAt,
     })),
   });
+
+  } catch (error) {
+    console.error("[api] Request failed", error);
+    return Response.json({ error: "Service temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }

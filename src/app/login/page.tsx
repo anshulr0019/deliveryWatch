@@ -38,11 +38,11 @@ export default function LoginPage() {
             </div>
 
             <h1 className="mt-3.5 text-2xl font-semibold tracking-[-0.025em] text-[#1d1d1f] xl:text-[27px] leading-snug">
-              Scale from 10 mailboxes to <span className="text-[#0F372E]">10,000 with ease.</span>
+              Keep your email DNS <span className="text-[#0F372E]">under observation.</span>
             </h1>
 
             <p className="mt-2.5 text-[13px] leading-relaxed text-[#6e6e73]">
-              DeliveryWatch runs real-time DNS diagnostics across SPF, DKIM, DMARC, MX records and 8 blacklists around the clock so you never land in spam.
+              DeliveryWatch runs real-time DNS diagnostics across SPF, DKIM, DMARC, MX records and 7 blacklists around the clock with clear findings and change history.
             </p>
 
             <div className="mt-6 space-y-2.5 text-xs text-[#1d1d1f]">
@@ -56,7 +56,7 @@ export default function LoginPage() {
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </span>
-                <span className="font-medium text-slate-700">Instant WhatsApp, Slack, and email notifications</span>
+                <span className="font-medium text-slate-700">Queued Slack and email notifications</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
@@ -91,7 +91,7 @@ export default function LoginPage() {
             </Suspense>
 
             <p className="mt-6 text-center text-[11px] font-medium tracking-tight text-[#86868b]">
-              Continuous Deliverability & Blacklist Monitoring — 100% Free Forever.
+              Continuous Deliverability & Blacklist Monitoring — Free to use.
             </p>
           </div>
         </div>

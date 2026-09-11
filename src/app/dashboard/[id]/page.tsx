@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { checks, domains, events } from "@/db/schema";
@@ -15,7 +15,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   if (!UUID_RE.test(id)) return { title: "Domain — DeliveryWatch" };
-  const [row] = await db.select({ domain: domains.domain }).from(domains).where(eq(domains.id, id)).limit(1);
+  const user = await requireUser();
+  const [row] = await db.select({ domain: domains.domain }).from(domains).where(and(eq(domains.id, id), eq(domains.userId, user.id))).limit(1);
   return {
     title: row ? `${row.domain} — DeliveryWatch` : "Domain — DeliveryWatch",
     description: row ? `Deliverability monitoring and DNS health for ${row.domain}.` : "Domain monitoring details.",
@@ -35,7 +36,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
   if (!domain) notFound();
 
   const [history, timeline] = await Promise.all([
-    db.select().from(checks).where(eq(checks.domainId, id)).orderBy(desc(checks.checkedAt)).limit(1000),
+    db.select().from(checks).where(and(eq(checks.domainId, id), sql`${checks.checkedAt} >= now() - interval '90 days'`)).orderBy(desc(checks.checkedAt)),
     db.select().from(events).where(eq(events.domainId, id)).orderBy(desc(events.createdAt)).limit(200),
   ]);
 
@@ -46,7 +47,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
         totalScore: latest.score,
         grade: gradeFor(latest.score),
         tier: tierFor(latest.score),
-        inboxProbability: 0,
+        complete: [latest.spfStatus, latest.dkimStatus, latest.dmarcStatus, latest.mxStatus, latest.rblStatus].every(s => s !== "unknown"),
         spf: latest.spfDetails as SpfResult,
         dkim: latest.dkimDetails as DkimResult,
         dmarc: latest.dmarcDetails as DmarcResult,

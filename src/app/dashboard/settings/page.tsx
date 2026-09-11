@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import {
   ArrowRight,
@@ -31,7 +31,7 @@ export default async function SettingsPage() {
   const [[d], [c], [ch]] = await Promise.all([
     db.select({ n: count() }).from(domains).where(eq(domains.userId, user.id)),
     db.select({ n: count() }).from(checks).innerJoin(domains, eq(checks.domainId, domains.id)).where(eq(domains.userId, user.id)),
-    db.select({ n: count() }).from(alertChannels).where(eq(alertChannels.userId, user.id)),
+    db.select({ n: count() }).from(alertChannels).where(and(eq(alertChannels.userId, user.id), inArray(alertChannels.type, ["email", "slack", "webhook"]))),
   ]);
 
   const cronConfigured = Boolean(process.env.CRON_SECRET);
@@ -111,8 +111,8 @@ export default async function SettingsPage() {
               {[
                 { icon: InfinityIcon, text: "Unlimited monitored domains" },
                 { icon: Clock, text: "Automatic re-checks every 15 minutes" },
-                { icon: ShieldCheck, text: "SPF, DKIM, DMARC, MX + 8 blacklists" },
-                { icon: Bell, text: "Unlimited WhatsApp, Slack, email & webhook alerts" },
+                { icon: ShieldCheck, text: "SPF, DKIM, DMARC, MX + 7 blacklists" },
+                { icon: Bell, text: "Unlimited Slack, email & webhook alerts" },
                 { icon: Globe, text: "Full history & change timeline, forever" },
               ].map((i) => (
                 <li key={i.text} className="flex items-center gap-3">
@@ -236,4 +236,3 @@ export default async function SettingsPage() {
     </div>
   );
 }
-

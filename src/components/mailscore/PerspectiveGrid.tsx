@@ -31,42 +31,42 @@ const DEFAULT_FEATURES: FeatureItem[] = [
   {
     icon: Activity,
     title: "24/7 Automated Monitoring",
-    body: "Every domain is re-probed continuously every 15 minutes across SPF, DKIM, DMARC, MX records and 8 blacklists.",
+    body: "Every domain is re-probed continuously every 15 minutes across SPF, DKIM, DMARC, MX records and 7 blacklists.",
   },
   {
     icon: GitCompareArrows,
     title: "DNS Change & Drift Diffing",
-    body: "The instant a teammate edits an SPF include, rotates keys, or sets p=none, our diff engine catches the drift and alerts you.",
+    body: "Compare observed SPF records, DKIM selectors, DMARC policies and MX destinations between scans.",
   },
   {
     icon: ShieldAlert,
-    title: "8-Database Blacklist Watchdog",
-    body: "Spamhaus, Barracuda, SpamCop, SORBS, UCEPROTECT, PSBL, DroneBL & CBL scanned around the clock with instant escalation.",
+    title: "7-Provider Blacklist Watchdog",
+    body: "Spamhaus, Barracuda, SpamCop, UCEPROTECT, PSBL, DroneBL & CBL scanned around the clock with recorded findings.",
   },
   {
     icon: Bell,
-    title: "WhatsApp, Slack & Email Alerts",
-    body: "Receive urgent pings directly inside your team's channels before campaigns send to the spam folder.",
+    title: "Slack, Email & Webhook Alerts",
+    body: "Queue notifications to configured channels, with persisted attempts and retries when providers are unavailable.",
   },
   {
     icon: LineChart,
     title: "Historical Deliverability Trends",
-    body: "Track your domain deliverability scores over 7, 30 and 90 days. Detect slow degradation before it impacts replies.",
+    body: "Track your domain DNS health scores over 7, 30 and 90 days. Detect slow degradation before it impacts replies.",
   },
   {
     icon: Layers,
-    title: "Domain Isolation Safeguards",
-    body: "Keep secondary cold sending domains strictly separated from your core business inbox to eliminate domain burning.",
+    title: "Independent Domain Histories",
+    body: "Review each domain independently, with its own scans, history and pause controls. Monitoring does not isolate mail infrastructure.",
   },
   {
     icon: RefreshCw,
     title: "Automated Selector Probing",
-    body: "Intelligent discovery algorithms check Google Workspace, Microsoft 365, Mailgun, Postmark and SendGrid DKIM keys.",
+    body: "Probe common DKIM selectors or supply your provider's selectors explicitly. Undiscovered keys are marked unknown.",
   },
   {
     icon: Zap,
-    title: "100% Free Forever",
-    body: "Unlimited domains, unlimited history, zero credit card required. Our open monitoring infrastructure is built for teams.",
+    title: "Free to use",
+    body: "Explore DNS monitoring without billing. Request limits protect the service, and the dashboard shows up to 90 days of history.",
   },
 ];
 

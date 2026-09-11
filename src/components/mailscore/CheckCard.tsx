@@ -58,7 +58,7 @@ export function CheckCard({ title, subtitle, status, score, maxScore = 20, recor
           </div>
           <div className="text-right">
             <div className="font-display text-xl font-bold" style={{ color }}>
-              {score}
+              {status === "unknown" ? "—" : score}
               <span className="text-xs text-slate-400">/{maxScore}</span>
             </div>
             <span
@@ -105,7 +105,7 @@ export function CheckCard({ title, subtitle, status, score, maxScore = 20, recor
 
         {(issues.length > 0 || suggestions.length > 0) && (
           <div className="mt-4 border-t border-slate-100 pt-3">
-            <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left text-xs font-semibold text-slate-700 hover:text-slate-900">
+            <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center justify-between text-left text-xs font-semibold text-slate-700 hover:text-slate-900">
               <span className="inline-flex items-center gap-2">
                 <Wrench className="h-3.5 w-3.5 text-[#0F372E]" />
                 {issues.length} issue{issues.length === 1 ? "" : "s"} · {suggestions.length} fix{suggestions.length === 1 ? "" : "es"}

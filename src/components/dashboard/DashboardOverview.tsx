@@ -1,5 +1,6 @@
 "use client";
 
+import { ScanOptionsFields } from "./ScanOptionsFields";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,8 @@ const SCAN_STEPS = ["Resolving SPF", "Probing DKIM selectors", "Reading DMARC", 
 
 export function DashboardOverview({ initialDomains, stats, recentEvents, prefillDomain = "" }: Props) {
   const router = useRouter();
+  const [selectors, setSelectors] = useState("");
+  const [sendingIp, setSendingIp] = useState("");
   const [list, setList] = useState<DomainRow[]>(initialDomains);
   const [input, setInput] = useState(prefillDomain);
   const [adding, setAdding] = useState(false);
@@ -68,7 +71,7 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
     setStep(0);
     const t = setInterval(() => setStep((s) => Math.min(SCAN_STEPS.length - 1, s + 1)), 700);
     try {
-      const res = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain: input }) });
+      const res = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain: input, dkimSelectors: selectors.split(",").map(s => s.trim()).filter(Boolean), sendingIp: sendingIp.trim() }) });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 409 && data.domainId) {
@@ -94,12 +97,12 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
   const remove = async (id: string, name: string) => {
     if (!confirm(`Stop monitoring ${name}? All history will be deleted.`)) return;
     setDeleting(id);
-    const res = await fetch(`/api/domains/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setList((l) => l.filter((d) => d.id !== id));
-      router.refresh();
-    }
-    setDeleting(null);
+    try {
+      const res = await fetch(`/api/domains/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Could not remove domain. Please try again.");
+      setList(l => l.filter(d => d.id !== id)); router.refresh();
+    } catch (error) { setError(error instanceof Error ? error.message : "Network error. Please try again."); }
+    finally { setDeleting(null); }
   };
 
   return (
@@ -175,6 +178,7 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
             )}
             {error && <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
           </form>
+        <ScanOptionsFields selectors={selectors} sendingIp={sendingIp} onSelectors={setSelectors} onSendingIp={setSendingIp} />
         </SpotlightCard>
       )}
 

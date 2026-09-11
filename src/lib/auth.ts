@@ -1,6 +1,7 @@
+import { promisify } from "node:util";
 import "server-only";
 import { cookies } from "next/headers";
-import { randomBytes, scryptSync, timingSafeEqual, createHash } from "node:crypto";
+import { randomBytes, scrypt, timingSafeEqual, createHash } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles, sessions, type Profile } from "@/db/schema";
@@ -8,18 +9,20 @@ import { profiles, sessions, type Profile } from "@/db/schema";
 export const SESSION_COOKIE = "dw_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
+const scryptAsync = promisify(scrypt);
+
 /* ------------------------------ passwords ------------------------------ */
 
-export function hashPassword(password: string): string {
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hash = (await scryptAsync(password, salt, 64) as Buffer).toString("hex");
   return `scrypt$${salt}$${hash}`;
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [algo, salt, hash] = stored.split("$");
   if (algo !== "scrypt" || !salt || !hash) return false;
-  const candidate = scryptSync(password, salt, 64);
+  const candidate = await scryptAsync(password, salt, 64) as Buffer;
   const expected = Buffer.from(hash, "hex");
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
@@ -73,6 +76,7 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
         email: profiles.email,
         fullName: profiles.fullName,
         googleId: profiles.googleId,
+        emailVerifiedAt: profiles.emailVerifiedAt,
         avatarUrl: profiles.avatarUrl,
         plan: profiles.plan,
         createdAt: profiles.createdAt,

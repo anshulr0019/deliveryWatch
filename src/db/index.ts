@@ -19,6 +19,10 @@ export function getPool(): Pool {
     const isSupabase = databaseUrl.includes("supabase.com") || databaseUrl.includes("pooler.supabase.com");
     globalForDb.__arenaNextJsPostgresqlPool = new Pool({
       connectionString: databaseUrl,
+      max: 10,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+      statement_timeout: 10000,
       ssl: isSupabase || process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
     });
   }

@@ -11,8 +11,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   MessageSquare,
-  Smartphone,
   Mail,
+  Webhook,
   Clock,
   Zap,
 } from "lucide-react";
@@ -24,17 +24,17 @@ const STEPS = [
   {
     n: "01",
     title: "Add your sending domains",
-    body: "Paste any domain you send campaigns from. We run a deep DNS diagnostic baseline in under 5 seconds — SPF, DKIM, DMARC, MX and 8 blacklists.",
+    body: "Paste any domain you send campaigns from. We run a deep DNS diagnostic baseline — SPF, DKIM, DMARC, MX and 7 blacklists.",
   },
   {
     n: "02",
     title: "We watch every 15 minutes",
-    body: "Our workers re-query your DNS records around the clock. The instant anything changes — a deleted SPF include, a new blacklisting, a DKIM key rotation — we diff and flag it.",
+    body: "Our workers re-query your DNS records around the clock. When a scan observes a change — a deleted SPF include, a new blacklisting, a DKIM key rotation — we diff and flag it.",
   },
   {
     n: "03",
-    title: "Get alerted immediately",
-    body: "Blacklisted? Score dropped? Receive a push notification on WhatsApp, a Slack ping in your team channel, or an email — before your next campaign sends.",
+    title: "Receive change alerts",
+    body: "Blacklisted? Score dropped? Receive a Slack ping in your team channel, an email, or a signed webhook — with retry tracking.",
   },
 ];
 
@@ -109,7 +109,7 @@ function Panel1() {
           { label: "DKIM selector",  status: "✓ detected", ok: true },
           { label: "DMARC policy",   status: "scanning…",  ok: false },
           { label: "MX records",     status: "resolving…", ok: false },
-          { label: "Blacklists (8)", status: "querying…",  ok: false },
+          { label: "Blacklists (7)", status: "querying…",  ok: false },
         ].map((r) => (
           <div key={r.label} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
             <span className="text-xs font-semibold text-slate-700">{r.label}</span>
@@ -148,7 +148,7 @@ function Panel2() {
       </div>
       <div className="flex items-center justify-between rounded-2xl bg-[#0F372E] px-6 py-5 text-white">
         <div>
-          <div className="text-xs font-bold uppercase tracking-wide text-emerald-300">Deliverability Score</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-emerald-300">DNS Health Score</div>
           <div className="mt-1 text-4xl font-black">96<span className="text-xl font-semibold text-emerald-300">/100</span></div>
         </div>
         <Shield className="h-12 w-12 text-emerald-400 opacity-60" />
@@ -159,7 +159,7 @@ function Panel2() {
           { label: "DKIM",       detail: "google._domainkey — RSA 2048-bit" },
           { label: "DMARC",      detail: "p=quarantine; pct=100" },
           { label: "MX",         detail: "aspmx.l.google.com (priority 1)" },
-          { label: "Blacklists", detail: "0 / 8 databases flagged" },
+          { label: "Blacklists", detail: "0 / 7 providers flagged" },
         ].map((c) => (
           <div key={c.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
             <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -188,7 +188,7 @@ function Panel3() {
         </div>
         <div>
           <div className="text-sm font-bold text-slate-900">Alert Channels</div>
-          <div className="text-xs text-slate-500">Notify your team instantly</div>
+          <div className="text-xs text-slate-500">Track team notifications</div>
         </div>
       </div>
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3.5">
@@ -200,12 +200,12 @@ function Panel3() {
       </div>
       <div className="flex-1 space-y-3">
         <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white">
-            <Smartphone className="h-4 w-4" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F372E] text-white">
+            <Webhook className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-bold text-slate-900">WhatsApp</div>
-            <div className="text-[11px] text-slate-600">🚨 growth-reach.co blacklisted on Spamhaus!</div>
+            <div className="text-xs font-bold text-slate-900">Webhook</div>
+            <div className="text-[11px] text-slate-600">Signed JSON delivery accepted</div>
           </div>
           <span className="ml-auto badge-healthy shrink-0">Sent</span>
         </div>
@@ -401,4 +401,3 @@ export function StickyScroll({ isAuthenticated }: { isAuthenticated: boolean }) 
     </section>
   );
 }
-
