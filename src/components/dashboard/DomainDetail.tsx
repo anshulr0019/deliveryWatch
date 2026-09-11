@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
+import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Clock, Loader2, Pause, Play, RefreshCw, Trash2 } from "lucide-react";
 import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
+import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/mailscore/ScrollReveal";
 import { ScoreGauge } from "@/components/mailscore/ScoreGauge";
 import { CheckCard } from "@/components/mailscore/CheckCard";
 import { ScoreHistoryChart } from "./ScoreHistoryChart";
@@ -109,6 +111,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
       </Link>
 
       {/* hero */}
+      <ScrollReveal direction="up" amount={0.12}>
       <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)" innerClassName="p-6 sm:p-8">
         <div className="grid items-center gap-8 lg:grid-cols-[auto_1fr_auto]">
           <div className="flex justify-center">
@@ -131,11 +134,18 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               {format(new Date(domain.createdAt), "MMM d, yyyy")}
             </p>
             {latestResult && !latestResult.complete && <p className="mt-2 text-sm text-amber-800">Partial DNS score: some checks are unknown. Review the observations below before changing DNS.</p>}
-            {flash && (
-              <p className={`mt-3 rounded-xl border px-3.5 py-2 text-sm font-semibold ${flash.kind === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
-                {flash.text}
-              </p>
-            )}
+            <AnimatePresence initial={false}>
+              {flash && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -6 }}
+                  className={`mt-3 overflow-hidden rounded-xl border px-3.5 py-2 text-sm font-semibold ${flash.kind === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}
+                >
+                  {flash.text}
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
           <div className="flex flex-row flex-wrap justify-center gap-2.5 lg:flex-col">
             <button type="button" onClick={recheck} disabled={rechecking} className="btn-primary">
@@ -152,11 +162,14 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
           </div>
         </div>
       </SpotlightCard>
+      </ScrollReveal>
 
       {/* chart */}
-      <SpotlightCard innerClassName="p-5 sm:p-6">
-        <ScoreHistoryChart history={history} />
-      </SpotlightCard>
+      <ScrollReveal direction="up" delay={0.06} amount={0.12}>
+        <SpotlightCard innerClassName="p-5 sm:p-6">
+          <ScoreHistoryChart history={history} />
+        </SpotlightCard>
+      </ScrollReveal>
 
       {/* breakdown */}
       <section>
@@ -169,7 +182,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
         </div>
 
         {latestResult ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
+            <StaggerItem>
             <CheckCard
               title="SPF"
               subtitle="Sender Policy Framework"
@@ -183,6 +197,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               issues={latestResult.spf.issues}
               suggestions={latestResult.spf.suggestions}
             />
+            </StaggerItem>
+            <StaggerItem>
             <CheckCard
               title="DKIM"
               subtitle="DomainKeys Identified Mail"
@@ -195,6 +211,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               issues={latestResult.dkim.issues}
               suggestions={latestResult.dkim.suggestions}
             />
+            </StaggerItem>
+            <StaggerItem>
             <CheckCard
               title="DMARC"
               subtitle="Domain-based Message Auth"
@@ -205,6 +223,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               issues={latestResult.dmarc.issues}
               suggestions={latestResult.dmarc.suggestions}
             />
+            </StaggerItem>
+            <StaggerItem>
             <CheckCard
               title="MX Records"
               subtitle="Mail Exchange routing"
@@ -217,6 +237,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               issues={latestResult.mx.issues}
               suggestions={latestResult.mx.suggestions}
             />
+            </StaggerItem>
+            <StaggerItem>
             <CheckCard
               title="Blacklists (RBL)"
               subtitle="7 reputation providers"
@@ -229,7 +251,8 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               issues={latestResult.rbl.issues}
               suggestions={latestResult.rbl.suggestions}
             />
-          </div>
+            </StaggerItem>
+          </StaggerContainer>
         ) : (
           <SpotlightCard innerClassName="p-8 text-center text-sm text-slate-500">
             No check data has been recorded for this domain yet. Click &ldquo;Re-check Now&rdquo; to trigger the first scan.
@@ -247,9 +270,10 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               No change events or alerts recorded for this domain yet. We will notify you when records shift.
             </SpotlightCard>
           ) : (
-            <div className="space-y-2">
+            <StaggerContainer className="space-y-2" stagger={0.05}>
               {events.map((e) => (
-                <SpotlightCard key={e.id} innerClassName="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <StaggerItem key={e.id}>
+                <SpotlightCard innerClassName="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
@@ -269,8 +293,9 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
                   </div>
                   <span className="text-xs text-slate-400 shrink-0">{format(new Date(e.createdAt), "PPp")}</span>
                 </SpotlightCard>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           )}
         </div>
       </section>

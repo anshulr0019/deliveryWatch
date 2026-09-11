@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
+import { motion } from "motion/react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CheckPoint } from "./DomainDetail";
 
@@ -29,14 +30,15 @@ export function ScoreHistoryChart({ history }: { history: CheckPoint[] }) {
             {data.length} snapshot{data.length === 1 ? "" : "s"} · low {min} · high {max}
           </p>
         </div>
-        <div className="inline-flex rounded-full border border-slate-200 bg-slate-100 p-1 text-xs">
+        <div className="relative inline-flex rounded-full border border-slate-200 bg-slate-100 p-1 text-xs">
           {([7, 30, 90] as Range[]).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRange(r)}
-              className={`rounded-full px-3 py-1 font-semibold transition ${range === r ? "bg-white text-[#0F372E] shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              className={`relative z-10 rounded-full px-3 py-1 font-semibold transition ${range === r ? "text-[#0F372E]" : "text-slate-600 hover:text-slate-900"}`}
             >
+              {range === r && <motion.span layoutId="score-range-pill" className="absolute inset-0 -z-10 rounded-full bg-white shadow-sm" transition={{ type: "spring", stiffness: 480, damping: 34 }} />}
               {r}d
             </button>
           ))}
@@ -44,6 +46,13 @@ export function ScoreHistoryChart({ history }: { history: CheckPoint[] }) {
       </div>
 
       <div className="mt-4 h-64 w-full">
+        <motion.div
+          key={range}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="h-full w-full"
+        >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
             <defs>
@@ -77,6 +86,7 @@ export function ScoreHistoryChart({ history }: { history: CheckPoint[] }) {
             <Area type="monotone" dataKey="score" stroke="#0F372E" strokeWidth={2.5} fill="url(#emeraldFill)" dot={data.length < 40 ? { r: 3, fill: "#10B981", stroke: "#FFFFFF", strokeWidth: 2 } : false} activeDot={{ r: 5, fill: "#0F372E" }} isAnimationActive />
           </AreaChart>
         </ResponsiveContainer>
+        </motion.div>
       </div>
     </div>
   );

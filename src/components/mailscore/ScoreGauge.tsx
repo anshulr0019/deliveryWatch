@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMotionValue, useMotionValueEvent, useReducedMotion, useSpring } from "motion/react";
 import { scoreColor, scoreLabel } from "@/lib/score-ui";
 
 interface ScoreGaugeProps {
@@ -13,10 +14,26 @@ interface ScoreGaugeProps {
 
 export function ScoreGauge({ score, size = 200, strokeWidth = 12, grade, subtitle }: ScoreGaugeProps) {
   const [animated, setAnimated] = useState(0);
+  const [displayedScore, setDisplayedScore] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const scoreValue = useMotionValue(0);
+  const scoreSpring = useSpring(scoreValue, { stiffness: 150, damping: 24, mass: 0.7 });
+
+  useMotionValueEvent(scoreSpring, "change", (latest) => {
+    if (!reduceMotion) setDisplayedScore(Math.round(latest));
+  });
+
   useEffect(() => {
+    if (reduceMotion) {
+      setAnimated(score);
+      setDisplayedScore(score);
+      scoreValue.set(score);
+      return;
+    }
     const t = setTimeout(() => setAnimated(score), 60);
+    scoreValue.set(score);
     return () => clearTimeout(t);
-  }, [score]);
+  }, [score, reduceMotion, scoreValue]);
 
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
@@ -49,7 +66,7 @@ export function ScoreGauge({ score, size = 200, strokeWidth = 12, grade, subtitl
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="font-display font-bold leading-none tracking-tight text-[#0B1311]" style={{ fontSize: size * 0.26 }}>
-          {score}
+          {displayedScore}
         </div>
         <div className="mt-1 font-semibold uppercase tracking-[0.2em] text-slate-400" style={{ fontSize: Math.max(9, size * 0.055) }}>
           {grade ? `Grade ${grade}` : "/ 100"}

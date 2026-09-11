@@ -472,3 +472,26 @@ body {
   background-size: 200% 100%;
   animation: shimmer-x 2.5s linear infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hero-anim,
+  .animate-float,
+  .animate-live-ping,
+  .divider-shimmer {
+    animation: none !important;
+  }
+
+  .tilt-card {
+    transform: none !important;
+    transition: none !important;
+  }
+}

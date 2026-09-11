@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { motion, useInView } from "motion/react";
+import { motion, useInView, useReducedMotion } from "motion/react";
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -22,6 +22,7 @@ export function ScrollReveal({
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once, amount });
+  const reduceMotion = useReducedMotion();
 
   const variants = {
     up:    { hidden: { opacity: 0, y: 48 },       visible: { opacity: 1, y: 0 } },
@@ -34,10 +35,10 @@ export function ScrollReveal({
   return (
     <motion.div
       ref={ref}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
+      initial={reduceMotion ? false : "hidden"}
+      animate={reduceMotion || isInView ? "visible" : "hidden"}
       variants={variants[direction]}
-      transition={{ duration: 0.65, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.65, delay, ease: [0.16, 1, 0.3, 1] }}
       className={className}
     >
       {children}
@@ -60,15 +61,16 @@ export function StaggerContainer({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once, amount: 0.15 });
+  const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
       ref={ref}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
+      initial={reduceMotion ? false : "hidden"}
+      animate={reduceMotion || isInView ? "visible" : "hidden"}
       variants={{
         hidden: {},
-        visible: { transition: { staggerChildren: stagger, delayChildren: delay } },
+        visible: { transition: { staggerChildren: reduceMotion ? 0 : stagger, delayChildren: reduceMotion ? 0 : delay } },
       }}
       className={className}
     >

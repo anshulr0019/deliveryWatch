@@ -5,6 +5,7 @@ import { SmoothScroll } from "@/components/mailscore/SmoothScroll";
 import { FilmGrain } from "@/components/mailscore/FilmGrain";
 import { LiveBackground } from "@/components/mailscore/LiveBackground";
 import { ScrollProgress } from "@/components/mailscore/ScrollProgress";
+import { MotionProvider } from "@/components/mailscore/MotionProvider";
 
 function getSiteUrl(): URL {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
@@ -39,17 +40,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="light">
       <body className="relative min-h-screen bg-white text-slate-800 antialiased overflow-x-hidden selection:bg-emerald-100 selection:text-[#0F372E]">
-        {/* Momentum smooth scrolling */}
-        <SmoothScroll />
+        <MotionProvider>
+          {/* Momentum smooth scrolling */}
+          <SmoothScroll />
 
-        {/* Interactive light ambient mesh background */}
-        <LiveBackground />
+          {/* Interactive light ambient mesh background */}
+          <LiveBackground />
 
-        {/* Top pine/emerald reading progress line */}
-        <ScrollProgress />
+          {/* Top pine/emerald reading progress line */}
+          <ScrollProgress />
 
-        {/* Page Content */}
-        <div className="relative z-10">{children}</div>
+          {/* Page Content */}
+          <div className="relative z-10">{children}</div>
+        </MotionProvider>
       </body>
     </html>
   );

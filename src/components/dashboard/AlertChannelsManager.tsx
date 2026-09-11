@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { Bell, Hash, Loader2, Mail, Plus, Send, Trash2, Webhook } from "lucide-react";
 import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
 
@@ -147,7 +148,18 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
               </label>
             )}
 
-            {error && <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -6 }}
+                  className="mt-4 overflow-hidden rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
 
             <button type="submit" disabled={saving || !value.trim()} className="btn-primary mt-5 w-full">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Save channel
@@ -157,21 +169,32 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
 
         {/* list */}
         <div className="space-y-3">
-          {channels.length === 0 ? (
-            <SpotlightCard>
-              <div className="p-10 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
-                  <Bell className="h-6 w-6" />
-                </div>
-                <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No channels configured</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">Add at least one channel so you hear about blacklistings before your customers do.</p>
-              </div>
-            </SpotlightCard>
-          ) : (
+          <AnimatePresence initial={false} mode="popLayout">
+            {channels.length === 0 ? (
+              <motion.div key="empty-channels" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+                <SpotlightCard>
+                  <div className="p-10 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
+                      <Bell className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No channels configured</h3>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">Add at least one channel so you hear about blacklistings before your customers do.</p>
+                  </div>
+                </SpotlightCard>
+              </motion.div>
+            ) : (
             channels.map((c) => {
               const M = TYPE_META[c.type];
               return (
-                <SpotlightCard key={c.id}>
+                <motion.div
+                  key={c.id}
+                  layout
+                  initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+                >
+                <SpotlightCard>
                   <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
                     <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${c.isActive ? "border-emerald-200 bg-emerald-50 text-[#0F372E]" : "border-slate-200 bg-slate-50 text-slate-400"}`}>
@@ -180,14 +203,34 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900">{M.label}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${c.isActive ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
-                            {c.isActive ? "Active" : "Paused"}
-                          </span>
+                          <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                              key={c.isActive ? "active" : "paused"}
+                              initial={{ opacity: 0, scale: 0.88 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.88 }}
+                              transition={{ duration: 0.16 }}
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${c.isActive ? "border border-emerald-200 bg-emerald-50 text-emerald-800" : "border border-slate-200 bg-slate-100 text-slate-500"}`}
+                            >
+                              {c.isActive ? "Active" : "Paused"}
+                            </motion.span>
+                          </AnimatePresence>
                         </div>
                         <div className="truncate text-xs font-medium text-slate-600" title={describe(c)}>
                           {describe(c)}
                         </div>
-                        {testMsg[c.id] && <div className="mt-1 text-[11px] font-semibold text-emerald-700">{testMsg[c.id]}</div>}
+                        <AnimatePresence initial={false}>
+                          {testMsg[c.id] && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              className="mt-1 text-[11px] font-semibold text-emerald-700"
+                            >
+                              {testMsg[c.id]}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -211,9 +254,11 @@ export function AlertChannelsManager({ initialChannels, userEmail, integrations 
                     </div>
                   </div>
                 </SpotlightCard>
+                </motion.div>
               );
             })
-          )}
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

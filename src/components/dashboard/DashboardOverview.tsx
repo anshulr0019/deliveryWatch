@@ -5,8 +5,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { AnimatePresence, motion } from "motion/react";
 import { Activity, ArrowRight, Bell, Globe, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { SpotlightCard } from "@/components/mailscore/SpotlightCard";
+import { StaggerContainer, StaggerItem } from "@/components/mailscore/ScrollReveal";
 import { scoreColor, scoreLabel, severityColor } from "@/lib/score-ui";
 
 export interface DomainRow {
@@ -120,86 +122,134 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
       </div>
 
       {/* stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard icon={Globe} label="Domains monitored" value={String(count)} hint={count === 1 ? "1 domain under watch" : `${count} domains under watch`} />
-        <StatCard
-          icon={Activity}
-          label="Average deliverability"
-          value={count ? `${avg}` : "—"}
-          hint={count ? scoreLabel(avg) : "Add a domain to begin"}
-          valueColor={count ? scoreColor(avg) : undefined}
-        />
-        <StatCard
-          icon={Bell}
-          label="Active alerts (7d)"
-          value={String(stats.activeAlerts)}
-          hint={stats.activeAlerts ? "Warning or critical events" : "All quiet"}
-          valueColor={stats.activeAlerts ? "#F59E0B" : "#10B981"}
-        />
-      </div>
+      <StaggerContainer className="grid gap-4 sm:grid-cols-3" stagger={0.07}>
+        <StaggerItem><StatCard icon={Globe} label="Domains monitored" value={String(count)} hint={count === 1 ? "1 domain under watch" : `${count} domains under watch`} /></StaggerItem>
+        <StaggerItem>
+          <StatCard
+            icon={Activity}
+            label="Average deliverability"
+            value={count ? `${avg}` : "—"}
+            hint={count ? scoreLabel(avg) : "Add a domain to begin"}
+            valueColor={count ? scoreColor(avg) : undefined}
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            icon={Bell}
+            label="Active alerts (7d)"
+            value={String(stats.activeAlerts)}
+            hint={stats.activeAlerts ? "Warning or critical events" : "All quiet"}
+            valueColor={stats.activeAlerts ? "#F59E0B" : "#10B981"}
+          />
+        </StaggerItem>
+      </StaggerContainer>
 
       {/* add form */}
-      {showForm && (
-        <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)">
-          <form onSubmit={addDomain} className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Add a domain to monitor, e.g. yourcompany.com"
-                className="input-domain flex-1"
-                disabled={adding}
-                spellCheck={false}
-                autoComplete="off"
-              />
-              <button type="submit" disabled={adding || !input.trim()} className="btn-primary min-w-[170px]">
-                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                {adding ? "Scanning…" : "Add & Scan"}
-              </button>
-            </div>
-            {adding && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-500">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                    </span>
-                    {SCAN_STEPS[step]}…
-                  </span>
-                  <span>
-                    {step + 1}/{SCAN_STEPS.length}
-                  </span>
+      <AnimatePresence initial={false} mode="wait">
+        {showForm && (
+          <motion.div
+            key="domain-form"
+            initial={{ opacity: 0, height: 0, y: -12 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <SpotlightCard borderGlowColor="rgba(16, 185, 129, 0.4)">
+              <form onSubmit={addDomain} className="p-5 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Add a domain to monitor, e.g. yourcompany.com"
+                    className="input-domain flex-1"
+                    disabled={adding}
+                    spellCheck={false}
+                    autoComplete="off"
+                  />
+                  <button type="submit" disabled={adding || !input.trim()} className="btn-primary min-w-[170px]">
+                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    {adding ? "Scanning…" : "Add & Scan"}
+                  </button>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full bg-gradient-to-r from-[#0F372E] via-[#10B981] to-[#34D399] transition-all duration-500" style={{ width: `${((step + 1) / SCAN_STEPS.length) * 100}%` }} />
-                </div>
-              </div>
-            )}
-            {error && <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
-          </form>
-        <ScanOptionsFields selectors={selectors} sendingIp={sendingIp} onSelectors={setSelectors} onSendingIp={setSendingIp} />
-        </SpotlightCard>
-      )}
+                {adding && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.span
+                          key={SCAN_STEPS[step]}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 8 }}
+                          transition={{ duration: 0.18 }}
+                          className="inline-flex items-center gap-2"
+                        >
+                          <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-500">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                          </span>
+                          {SCAN_STEPS[step]}…
+                        </motion.span>
+                      </AnimatePresence>
+                      <span>{step + 1}/{SCAN_STEPS.length}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-[#0F372E] via-[#10B981] to-[#34D399]"
+                        animate={{ width: `${((step + 1) / SCAN_STEPS.length) * 100}%` }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <AnimatePresence initial={false}>
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0, y: -6 }}
+                      animate={{ opacity: 1, height: "auto", y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: -6 }}
+                      className="mt-3 overflow-hidden rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-700"
+                    >
+                      {error}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </form>
+              <ScanOptionsFields selectors={selectors} sendingIp={sendingIp} onSelectors={setSelectors} onSendingIp={setSendingIp} />
+            </SpotlightCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         {/* domain list */}
         <div className="space-y-3">
-          {list.length === 0 ? (
-            <SpotlightCard>
-              <div className="p-10 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
-                  <Globe className="h-6 w-6" />
-                </div>
-                <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No domains yet</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">Add your first domain to start monitoring. We&apos;ll run a baseline scan immediately.</p>
-              </div>
-            </SpotlightCard>
-          ) : (
+          <AnimatePresence initial={false} mode="popLayout">
+            {list.length === 0 ? (
+              <motion.div key="empty-domains" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+                <SpotlightCard>
+                  <div className="p-10 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#0F372E]">
+                      <Globe className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-display mt-4 text-lg font-bold text-[#0B1311]">No domains yet</h3>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">Add your first domain to start monitoring. We&apos;ll run a baseline scan immediately.</p>
+                  </div>
+                </SpotlightCard>
+              </motion.div>
+            ) : (
             list.map((d) => {
               const color = scoreColor(d.latestScore);
               return (
-                <SpotlightCard key={d.id}>
+                <motion.div
+                  key={d.id}
+                  layout
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                >
+                <SpotlightCard>
                   <div className="flex items-center gap-4 p-4 sm:p-5">
                     <Link href={`/dashboard/${d.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                       <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 font-display text-lg font-bold" style={{ color }}>
@@ -218,7 +268,13 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
                           {d.lastCheckedAt ? `Checked ${formatDistanceToNow(new Date(d.lastCheckedAt), { addSuffix: true })}` : "Not checked yet"}
                         </div>
                         <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-100">
-                          <div className="h-full rounded-full" style={{ width: `${d.latestScore}%`, background: color }} />
+                          <motion.div
+                            className="h-full rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${d.latestScore}%` }}
+                            transition={{ duration: 0.7, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                            style={{ background: color }}
+                          />
                         </div>
                       </div>
                       <ArrowRight className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" />
@@ -234,9 +290,11 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
                     </button>
                   </div>
                 </SpotlightCard>
+                </motion.div>
               );
             })
-          )}
+            )}
+          </AnimatePresence>
         </div>
 
         {/* recent activity */}

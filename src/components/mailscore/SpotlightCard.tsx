@@ -35,7 +35,7 @@ export function SpotlightCard({
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setOpacity(0)}
-      className={`group relative rounded-2xl p-[1px] transition-all duration-300 ${className}`}
+      className={`group relative rounded-2xl p-[1px] transition-all duration-300 will-change-transform hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-22px_rgba(15,55,46,0.38)] ${className}`}
       style={{ background: "#E2E8F0", ...style }}
     >
       {/* 1px Specular Border Glint that follows mouse */}

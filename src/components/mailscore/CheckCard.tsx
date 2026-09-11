@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown, Copy, ShieldCheck, ShieldAlert, ShieldX, Wrench } from "lucide-react";
 import { SpotlightCard } from "./SpotlightCard";
 import { statusColor, statusLabel } from "@/lib/score-ui";
@@ -72,7 +73,13 @@ export function CheckCard({ title, subtitle, status, score, maxScore = 20, recor
 
         {/* score bar */}
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(score / maxScore) * 100}%`, background: color }} />
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${(score / maxScore) * 100}%` }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            style={{ background: color }}
+          />
         </div>
 
         {facts.length > 0 && (
@@ -112,8 +119,15 @@ export function CheckCard({ title, subtitle, status, score, maxScore = 20, recor
               </span>
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
-            {open && (
-              <div className="mt-3 space-y-3 text-xs">
+            <AnimatePresence initial={false}>
+              {open && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -6 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-3 overflow-hidden text-xs"
+              >
                 {issues.length > 0 && (
                   <ul className="space-y-1.5">
                     {issues.map((i, idx) => (
@@ -134,8 +148,9 @@ export function CheckCard({ title, subtitle, status, score, maxScore = 20, recor
                     </ol>
                   </div>
                 )}
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 

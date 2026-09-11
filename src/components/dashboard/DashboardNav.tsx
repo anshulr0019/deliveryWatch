@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { Bell, Globe, LogOut, Menu, Settings, X } from "lucide-react";
 import { Logo } from "@/components/mailscore/Logo";
 
@@ -70,8 +71,15 @@ export function DashboardNav({ user }: { user: { email: string; fullName: string
         </button>
       </div>
 
+      <AnimatePresence initial={false}>
       {open && (
-        <div className="border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="overflow-hidden border-t border-slate-200 bg-white px-4 py-3 md:hidden"
+        >
           <nav className="flex flex-col gap-1">
             {NAV.map((n) => (
               <Link
@@ -91,8 +99,9 @@ export function DashboardNav({ user }: { user: { email: string; fullName: string
               Sign out
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </header>
   );
 }
