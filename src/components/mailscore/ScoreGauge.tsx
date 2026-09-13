@@ -24,14 +24,15 @@ export function ScoreGauge({ score, size = 200, strokeWidth = 12, grade, subtitl
   });
 
   useEffect(() => {
+    scoreValue.set(score);
     if (reduceMotion) {
-      setAnimated(score);
-      setDisplayedScore(score);
-      scoreValue.set(score);
-      return;
+      const t = setTimeout(() => {
+        setAnimated(score);
+        setDisplayedScore(score);
+      }, 0);
+      return () => clearTimeout(t);
     }
     const t = setTimeout(() => setAnimated(score), 60);
-    scoreValue.set(score);
     return () => clearTimeout(t);
   }, [score, reduceMotion, scoreValue]);
 
