@@ -36,7 +36,7 @@ function emailHtml(ctx: AlertContext): string {
       </table>
     </td></tr>
     <tr><td style="padding-top:28px" align="center">
-      <a href="${SITE_URL}/dashboard/${ctx.domainId}" style="display:inline-block;background:#0F372E;border:1px solid #10B981;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;font-size:14px;box-shadow:0 4px 14px rgba(16,185,129,0.2)">Open Dashboard →</a>
+      <a href="${SITE_URL}/dashboard/${ctx.domainId}#copilot" style="display:inline-block;background:#0F372E;border:1px solid #10B981;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;font-size:14px;box-shadow:0 4px 14px rgba(16,185,129,0.2)">Open Investigation →</a>
     </td></tr>
     <tr><td style="padding-top:24px;font-size:11px;color:#64748B;text-align:center">DeliveryWatch Continuous Monitoring · 100% Free Forever</td></tr>
   </table></td></tr></table></body></html>`;
@@ -48,7 +48,7 @@ function escapeHtml(s: string) {
 
 function plainText(ctx: AlertContext) {
   const { event, domain, score } = ctx;
-  return `${SEVERITY_EMOJI[event.severity] ?? ""} [${event.severity.toUpperCase()}] ${domain} — ${event.title}\n\n${event.description}\n\nCurrent score: ${score}/100\n${SITE_URL}/dashboard/${ctx.domainId}`;
+  return `${SEVERITY_EMOJI[event.severity] ?? ""} [${event.severity.toUpperCase()}] ${domain} — ${event.title}\n\n${event.description}\n\nCurrent score: ${score}/100\n${SITE_URL}/dashboard/${ctx.domainId}#copilot`;
 }
 
 /* ------------------------------- senders ------------------------------- */
@@ -87,7 +87,7 @@ async function sendSlack(webhookUrl: string, ctx: AlertContext) {
           },
           {
             type: "actions",
-            elements: [{ type: "button", text: { type: "plain_text", text: "Open Dashboard" }, url: `${SITE_URL}/dashboard/${ctx.domainId}` }],
+            elements: [{ type: "button", text: { type: "plain_text", text: "Open Investigation" }, url: `${SITE_URL}/dashboard/${ctx.domainId}#copilot` }],
           },
         ],
       },
@@ -109,7 +109,7 @@ async function sendWebhook(url: string, secret: string | undefined, ctx: AlertCo
     score: ctx.score,
     previousScore: ctx.previousScore ?? null,
     event: ctx.event,
-    dashboardUrl: `${SITE_URL}/dashboard/${ctx.domainId}`,
+    dashboardUrl: `${SITE_URL}/dashboard/${ctx.domainId}#copilot`,
   });
   const headers: Record<string, string> = { "Content-Type": "application/json", "User-Agent": "DeliveryWatch/1.0" };
   if (ctx.deliveryId) headers["X-DeliveryWatch-Delivery"] = ctx.deliveryId;

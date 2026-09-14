@@ -114,7 +114,7 @@ export function DashboardOverview({ initialDomains, stats, recentEvents, prefill
         <div>
           <div className="eyebrow text-[#0F372E]">Overview</div>
           <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[#0B1311]">Monitored domains</h1>
-          <p className="mt-1 text-sm text-slate-600">Re-checked automatically every 15 minutes. Alerts fire on any warning or critical change.</p>
+          <p className="mt-1 text-sm text-slate-600">Re-checked automatically each day. Alerts fire on warning, critical, and recovery changes.</p>
         </div>
         <button type="button" onClick={() => setShowForm((s) => !s)} className="btn-primary self-start sm:self-auto">
           <Plus className="h-4 w-4" /> Add Domain

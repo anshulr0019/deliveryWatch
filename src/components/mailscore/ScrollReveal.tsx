@@ -82,12 +82,15 @@ export function StaggerContainer({
 export function StaggerItem({
   children,
   className,
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <motion.div
+      id={id}
       variants={{
         hidden: { opacity: 0, y: 32 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },

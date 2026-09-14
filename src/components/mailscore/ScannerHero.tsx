@@ -138,7 +138,7 @@ export function ScannerHero({ isAuthenticated = false }: { isAuthenticated?: boo
                   </button>
                 </div>
                 <p className="mt-3 text-xs text-slate-500">
-                  Create a free account to get re-checks every 15 minutes, history charts and Slack, email and webhook alerts.
+                  Create a free account to get daily re-checks, history charts and Slack, email and webhook alerts.
                 </p>
               </div>
             </div>

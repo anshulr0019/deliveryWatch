@@ -354,7 +354,7 @@ async function checkDmarc(resolver: Resolver, domain: string): Promise<DmarcResu
   if (dmarc.length === 0) {
     base.issues.push("No DMARC record found. Gmail & Yahoo now require DMARC for bulk senders.");
     base.suggestions.push(
-      `Publish a TXT record at _dmarc.${domain}: "v=DMARC1; p=none; rua=mailto:dmarc@${domain}" and tighten to quarantine/reject once reports look clean.`,
+      `Publish one valid DMARC TXT record at _dmarc.${domain}. Start with p=none while validating legitimate senders, and use a reporting mailbox that you control.`,
     );
     return base;
   }
@@ -377,7 +377,7 @@ async function checkDmarc(resolver: Resolver, domain: string): Promise<DmarcResu
   else if (policy === "quarantine") score = 16;
   else if (policy === "none") {
     score = 9;
-    base.issues.push("Policy is 'p=none' — no quarantine/rejection is requested by DMARC; receivers apply their own filtering.");
+    base.issues.push("Policy is the valid monitoring mode 'p=none'; it requests reporting without quarantine or rejection, while receivers continue applying their own filtering.");
     base.suggestions.push("Move to 'p=quarantine' and then 'p=reject' once your aggregate reports show only legitimate sources.");
   } else {
     score = 3;

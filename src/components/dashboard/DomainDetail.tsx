@@ -11,6 +11,7 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/mailsc
 import { ScoreGauge } from "@/components/mailscore/ScoreGauge";
 import { CheckCard } from "@/components/mailscore/CheckCard";
 import { ScoreHistoryChart } from "./ScoreHistoryChart";
+import { DeliveryWatchCopilot } from "./DeliveryWatchCopilot";
 import { scoreColor, scoreLabel } from "@/lib/score-ui";
 import type { MailScoreResult } from "@/lib/dns-check";
 
@@ -125,7 +126,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
                 {scoreLabel(domain.latestScore)}
               </span>
               <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${domain.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
-                {domain.isActive ? "Monitoring · every 15 min" : "Paused"}
+                {domain.isActive ? "Monitoring · daily" : "Paused"}
               </span>
             </div>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-500">
@@ -164,6 +165,12 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
       </SpotlightCard>
       </ScrollReveal>
 
+      <ScrollReveal direction="up" delay={0.04} amount={0.08}>
+        <div id="copilot" className="scroll-mt-24">
+          <DeliveryWatchCopilot domainId={domain.id} hasResult={Boolean(latestResult)} />
+        </div>
+      </ScrollReveal>
+
       {/* chart */}
       <ScrollReveal direction="up" delay={0.06} amount={0.12}>
         <SpotlightCard innerClassName="p-5 sm:p-6">
@@ -183,7 +190,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
 
         {latestResult ? (
           <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
-            <StaggerItem>
+            <StaggerItem id="evidence-spf" className="scroll-mt-24">
             <CheckCard
               title="SPF"
               subtitle="Sender Policy Framework"
@@ -198,7 +205,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               suggestions={latestResult.spf.suggestions}
             />
             </StaggerItem>
-            <StaggerItem>
+            <StaggerItem id="evidence-dkim" className="scroll-mt-24">
             <CheckCard
               title="DKIM"
               subtitle="DomainKeys Identified Mail"
@@ -212,7 +219,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               suggestions={latestResult.dkim.suggestions}
             />
             </StaggerItem>
-            <StaggerItem>
+            <StaggerItem id="evidence-dmarc" className="scroll-mt-24">
             <CheckCard
               title="DMARC"
               subtitle="Domain-based Message Auth"
@@ -224,7 +231,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               suggestions={latestResult.dmarc.suggestions}
             />
             </StaggerItem>
-            <StaggerItem>
+            <StaggerItem id="evidence-mx" className="scroll-mt-24">
             <CheckCard
               title="MX Records"
               subtitle="Mail Exchange routing"
@@ -238,7 +245,7 @@ export function DomainDetail({ domain, latestResult, history, events }: DomainDe
               suggestions={latestResult.mx.suggestions}
             />
             </StaggerItem>
-            <StaggerItem>
+            <StaggerItem id="evidence-rbl" className="scroll-mt-24">
             <CheckCard
               title="Blacklists (RBL)"
               subtitle="7 reputation providers"

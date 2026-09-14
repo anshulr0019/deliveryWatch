@@ -110,7 +110,7 @@ export default async function SettingsPage() {
             <ul className="mt-5 space-y-3.5 text-sm text-slate-700">
               {[
                 { icon: InfinityIcon, text: "Unlimited monitored domains" },
-                { icon: Clock, text: "Automatic re-checks every 15 minutes" },
+                { icon: Clock, text: "Automatic daily re-checks" },
                 { icon: ShieldCheck, text: "SPF, DKIM, DMARC, MX + 7 blacklists" },
                 { icon: Bell, text: "Unlimited Slack, email & webhook alerts" },
                 { icon: Globe, text: "Full history & change timeline, forever" },
@@ -186,7 +186,7 @@ export default async function SettingsPage() {
               <code className="rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-bold text-[#0F372E]">
                 /api/cron/check-all
               </code>{" "}
-              every 15 minutes (defined in{" "}
+              once daily at 00:00 UTC (defined in{" "}
               <code className="rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-bold text-[#0F372E]">
                 vercel.json
               </code>

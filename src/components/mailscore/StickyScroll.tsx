@@ -28,7 +28,7 @@ const STEPS = [
   },
   {
     n: "02",
-    title: "We watch every 15 minutes",
+    title: "We keep watch automatically",
     body: "Our workers re-query your DNS records around the clock. When a scan observes a change — a deleted SPF include, a new blacklisting, a DKIM key rotation — we diff and flag it.",
   },
   {

@@ -1,6 +1,6 @@
 # DeliveryWatch
 
-DeliveryWatch monitors email DNS configuration and IPv4 blacklist observations. It combines a public scanner with authenticated domain histories, record-change detection, and a durable notification queue.
+DeliveryWatch monitors email DNS configuration and IPv4 blacklist observations. It combines a public scanner with authenticated domain histories, record-change detection, a durable notification queue, and an evidence-based Copilot for guided investigation and verification.
 
 **A DNS health score is not an inbox-placement prediction.** This project does not send placement-test messages, provision mailboxes, isolate mail infrastructure, or guarantee delivery rates.
 
@@ -49,6 +49,7 @@ Tests use a disposable PGlite PostgreSQL database, actual application route hand
 | `GET /api/domains` | List the current account's domains |
 | `GET/PATCH/DELETE /api/domains/[id]` | Read, pause/resume, remove domain |
 | `POST /api/domains/[id]/recheck` | Manual scan, change detection and alert enqueue |
+| `GET/PATCH/POST /api/domains/[id]/copilot` | Explain evidence, save setup context, manage investigations and verify fixes |
 | `GET/POST /api/alerts` | List/create channels |
 | `PATCH/DELETE/POST /api/alerts/[id]` | Toggle/delete/test a channel |
 | `POST /api/auth/signup`, `/login`, `/logout` | Password authentication |
@@ -68,13 +69,21 @@ Scan requests accept `domain`, an optional `dkimSelectors` array (up to five), a
 - **Reputation:** configured outbound IPv4, or explicitly labeled inbound MX IPv4. No fallback to a website IP. Each provider is listed, clear or unavailable; blocked/error replies and DNS transport failures are never treated as clean. SORBS is excluded from the provider list.
 - **Partial observations:** unknown checks contribute no points, so a partial score is a lower-bound summary, not a diagnosis of failure. No score-drop alert is generated from unknown protocol observations. Record comparisons use the latest known protocol baseline after an outage.
 
+## DeliveryWatch Copilot
+
+Copilot organizes the latest deterministic scan into a plain-language explanation, compares it with the previous observation, and prepares safe fix steps for SPF, DKIM, DMARC, MX and reputation findings. Users can save their DNS provider, email services, sending purpose and private notes so guidance uses confirmed setup context instead of guessing provider values.
+
+Opening a fix plan creates a persisted investigation containing the source check, evidence and recommended action. A resolution note records what the user changed without marking the issue resolved. **Verify fix** runs a fresh DNS scan and separately records whether the original issue is resolved, still present, changed or unavailable. Alerts link directly to the Copilot investigation area, and recovery observations can generate recovery notifications.
+
+The current release uses reviewed provider guidance and deterministic rules, so it requires no paid model API. It does not yet use embeddings, pgvector or an external LLM. The existing DNS engine remains the only source of pass/fail status and scores.
+
 DNS answers are observations from the runtime resolver. Provider access policies can restrict DNSBL queries. For operational use, validate access with each provider and configure a supported resolver/service agreement. IPv6 reputation and seed-inbox placement testing are not implemented.
 
 ## Monitoring and alert reliability
 
-`vercel.json` schedules a sweep every 15 minutes. **Vercel Hobby supports only daily cron jobs.** Use a plan that supports this schedule or remove the Vercel cron entry and configure an external scheduler to call the endpoint every 15 minutes with `Authorization: Bearer <CRON_SECRET>`. Local `next dev` does not run scheduled sweeps automatically. See [Vercel cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+`vercel.json` schedules one daily sweep at 00:00 UTC for Vercel Hobby compatibility. An external scheduler can call the same endpoint more frequently with `Authorization: Bearer <CRON_SECRET>` if a shorter interval is needed. Local `next dev` does not run scheduled sweeps automatically. See [Vercel cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 
-Domains persist their next due time and lease token. Overlapping scans are rejected. A scan transaction atomically commits the snapshot, detected events, latest score and pending delivery records. A bounded cron sweep leaves remaining due domains for a subsequent invocation; it is not an unlimited-scale queue worker or a strict 15-minute SLA.
+Domains persist their next due time and lease token. Overlapping scans are rejected. A scan transaction atomically commits the snapshot, detected events, latest score and pending delivery records. A bounded cron sweep leaves remaining due domains for a subsequent invocation; it is not an unlimited-scale queue worker or a strict execution-time SLA.
 
 Deliveries are processed after manual scans and by scheduled sweeps. Failed sends retry up to five attempts using persisted next-attempt timestamps. Disabled/removed channels cancel queued delivery. The alert page shows pending, sent, failed and cancelled records. `sent` means provider acceptance, not confirmed receipt.
 
@@ -102,6 +111,7 @@ Rate limits are stored in PostgreSQL so separate server instances share limits. 
 - Salted asynchronous scrypt password hashing; hashed session and verification tokens
 - `src/lib/dns-check.ts`: DNS observations and bounded structural audits
 - `src/lib/change-detector.ts`: protocol drift and listing comparisons
+- `src/lib/copilot.ts`: evidence explanations, provider guidance and safe fix plans
 - `src/lib/monitor.ts`: per-domain leases and transactional persistence
 - `src/lib/alert-outbox.ts`: durable delivery claims/retries
 - `src/lib/safe-webhook.ts`: validated outbound webhook connections

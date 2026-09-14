@@ -113,7 +113,7 @@ export function LoginForm() {
             <p className="mt-1 text-[13px] leading-snug text-[#86868b]">
               {mode === "signin"
                 ? "Sign in to your DeliveryWatch dashboard."
-                : "Unlimited domains, 15-minute re-checks, alerts on Slack, email & webhooks."}
+                : "Unlimited domains, daily re-checks, alerts on Slack, email & webhooks."}
             </p>
           </motion.div>
         </AnimatePresence>

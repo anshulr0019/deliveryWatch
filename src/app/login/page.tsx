@@ -50,7 +50,7 @@ export default function LoginPage() {
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </span>
-                <span className="font-medium text-slate-700">Automated 15-minute background re-checks</span>
+                <span className="font-medium text-slate-700">Automated daily background re-checks</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">

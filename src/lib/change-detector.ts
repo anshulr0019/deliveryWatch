@@ -33,7 +33,11 @@ export function detectDomainChanges(previous: CheckSnapshot, current: CheckSnaps
     if (after === "unknown" || before === "unknown") continue;
     const changed = previous[field] !== undefined && current[field] !== undefined && previous[field] !== current[field];
     const policyChanged = p === "dmarc" && previous.dmarcPolicy !== current.dmarcPolicy;
-    if (before !== after || changed || policyChanged) out.push({ type: `${p}_changed`, severity: after === "fail" ? "critical" : "warning", title: `${p.toUpperCase()} ${changed || policyChanged ? "record changed" : `status changed: ${before} → ${after}`}`, description: `${domain}: ${p.toUpperCase()} configuration changed. ${p === "spf" ? `Current record: ${current.spfRecord || "missing"}.` : p === "dmarc" ? `Policy: ${previous.dmarcPolicy} → ${current.dmarcPolicy}.` : "Review the latest DNS snapshot."}` });
+    if (before !== after && after === "pass") {
+      out.push({ type: `${p}_recovered`, severity: "info", title: `${p.toUpperCase()} recovered`, description: `${domain}: ${p.toUpperCase()} changed from ${before} to pass. DeliveryWatch confirmed the current DNS observation; this does not measure inbox placement.` });
+    } else if (before !== after || changed || policyChanged) {
+      out.push({ type: `${p}_changed`, severity: after === "fail" ? "critical" : "warning", title: `${p.toUpperCase()} ${changed || policyChanged ? "record changed" : `status changed: ${before} → ${after}`}`, description: `${domain}: ${p.toUpperCase()} configuration changed. ${p === "spf" ? `Current record: ${current.spfRecord || "missing"}.` : p === "dmarc" ? `Policy: ${previous.dmarcPolicy} → ${current.dmarcPolicy}.` : "Review the latest DNS snapshot."}` });
+    }
   }
   // Compare only the same IP and providers with successful observations on both scans.
   if (previous.rblIp !== current.rblIp) {

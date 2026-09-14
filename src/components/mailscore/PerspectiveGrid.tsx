@@ -31,7 +31,7 @@ const DEFAULT_FEATURES: FeatureItem[] = [
   {
     icon: Activity,
     title: "24/7 Automated Monitoring",
-    body: "Every domain is re-probed continuously every 15 minutes across SPF, DKIM, DMARC, MX records and 7 blacklists.",
+    body: "Every domain is re-probed automatically each day across SPF, DKIM, DMARC, MX records and 7 blacklists.",
   },
   {
     icon: GitCompareArrows,

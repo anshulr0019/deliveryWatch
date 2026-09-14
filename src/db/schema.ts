@@ -85,6 +85,58 @@ export const checks = pgTable(
   (t) => [index("checks_domain_idx").on(t.domainId, t.checkedAt)],
 );
 
+/** User-confirmed provider context used to tailor deterministic Copilot guidance. */
+export const domainSetupProfiles = pgTable("domain_setup_profiles", {
+  domainId: uuid("domain_id")
+    .primaryKey()
+    .references(() => domains.id, { onDelete: "cascade" }),
+  dnsProvider: text("dns_provider"),
+  emailProviders: jsonb("email_providers").$type<string[]>().notNull().default([]),
+  sendingPurposes: jsonb("sending_purposes").$type<string[]>().notNull().default([]),
+  dkimSelectors: jsonb("dkim_selectors").$type<string[]>().notNull().default([]),
+  sendingIps: jsonb("sending_ips").$type<string[]>().notNull().default([]),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Persisted Copilot investigations. The source and verification checks keep the
+ * factual DNS observations separate from the generated explanation and notes.
+ */
+export const copilotInvestigations = pgTable(
+  "copilot_investigations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    domainId: uuid("domain_id")
+      .notNull()
+      .references(() => domains.id, { onDelete: "cascade" }),
+    sourceCheckId: uuid("source_check_id")
+      .notNull()
+      .references(() => checks.id, { onDelete: "cascade" }),
+    previousCheckId: uuid("previous_check_id").references(() => checks.id, { onDelete: "set null" }),
+    verificationCheckId: uuid("verification_check_id").references(() => checks.id, { onDelete: "set null" }),
+    findingKey: text("finding_key").notNull(),
+    protocol: text("protocol").$type<"spf" | "dkim" | "dmarc" | "mx" | "rbl">().notNull(),
+    status: text("status").$type<"open" | "resolved">().notNull().default("open"),
+    title: text("title").notNull(),
+    report: jsonb("report").notNull(),
+    originalEvidence: jsonb("original_evidence").notNull().default([]),
+    recommendedAction: jsonb("recommended_action").notNull().default({}),
+    resolutionNote: text("resolution_note"),
+    verificationResult: jsonb("verification_result"),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("copilot_source_finding_unique").on(t.sourceCheckId, t.findingKey),
+    index("copilot_domain_updated_idx").on(t.domainId, t.updatedAt),
+    index("copilot_domain_status_idx").on(t.domainId, t.status),
+  ],
+);
+
 export const events = pgTable(
   "events",
   {
@@ -119,6 +171,8 @@ export const alertChannels = pgTable(
 export type Profile = typeof profiles.$inferSelect;
 export type Domain = typeof domains.$inferSelect;
 export type Check = typeof checks.$inferSelect;
+export type DomainSetupProfile = typeof domainSetupProfiles.$inferSelect;
+export type CopilotInvestigation = typeof copilotInvestigations.$inferSelect;
 export type DomainEvent = typeof events.$inferSelect;
 export type AlertChannel = typeof alertChannels.$inferSelect;
 

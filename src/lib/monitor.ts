@@ -38,12 +38,25 @@ export async function runMonitoredCheck(opts: { domainId: string; domainName: st
         if (Object.values({ spf: previous.spfStatus, dkim: previous.dkimStatus, dmarc: previous.dmarcStatus, mx: previous.mxStatus, rbl: previous.rblStatus }).includes("unknown")) baseline.score = result.totalScore;
       }
       const detected: DetectedEvent[] = baseline ? detectDomainChanges(baseline, snapshotFromResult(result), claimed.domain) : [{ type: "monitoring_started", severity: "info", title: "Monitoring started", description: `Baseline DNS scan recorded for ${claimed.domain}. Unavailable checks are marked unknown.` }];
-      if (!previous && result.rbl.listedOn.length) detected.push({ type: "blacklist_added", severity: "critical", title: `Listed on ${result.rbl.listedOn.join(", ")}`, description: `Checked IP ${result.rbl.ip} is listed. Confirm it belongs to your sending infrastructure.` });
+      if (!previous) {
+        const unhealthy = (["spf", "dkim", "dmarc", "mx", "rbl"] as const)
+          .filter(protocol => result[protocol].status === "warn" || result[protocol].status === "fail")
+          .map(protocol => `${protocol.toUpperCase()}: ${result[protocol].status}`);
+        if (unhealthy.length) {
+          detected.push({
+            type: "initial_unhealthy_report",
+            severity: (["spf", "dkim", "dmarc", "mx", "rbl"] as const).some(protocol => result[protocol].status === "fail") ? "critical" : "warning",
+            title: "Initial report needs attention",
+            description: `${claimed.domain}: ${unhealthy.join(", ")}. Open the Copilot investigation for evidence and safe next steps. DNS health does not measure inbox placement.`,
+          });
+        }
+      }
       const [inserted] = await tx.insert(checks).values(toCheckRow(claimed.id, result)).returning({ id: checks.id });
       const channels = opts.sendAlerts === false ? [] : await tx.select().from(alertChannels).where(and(eq(alertChannels.userId, claimed.userId), eq(alertChannels.isActive, true)));
       for (const event of detected) {
         const [saved] = await tx.insert(events).values({ domainId: claimed.id, ...event }).returning({ id: events.id });
-        if (event.severity !== "info" && channels.length) await tx.insert(alertDeliveries).values(channels.map(c => ({ eventId: saved.id, channelId: c.id, userId: claimed.userId, context: { domain: claimed.domain, domainId: claimed.id, score: result.totalScore, previousScore: previous?.score, event } })));
+        const isRecovery = event.type.endsWith("_recovered") || event.type === "blacklist_removed";
+        if ((event.severity !== "info" || isRecovery) && channels.length) await tx.insert(alertDeliveries).values(channels.map(c => ({ eventId: saved.id, channelId: c.id, userId: claimed.userId, context: { domain: claimed.domain, domainId: claimed.id, score: result.totalScore, previousScore: previous?.score, event } })));
       }
       await tx.update(domains).set({ latestScore: result.totalScore, lastCheckedAt: new Date(result.scannedAt), checkLeaseUntil: null, checkLeaseToken: null }).where(eq(domains.id, claimed.id));
       return { result, checkId: inserted.id, events: detected, previousScore: previous?.score ?? null };
