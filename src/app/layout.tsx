@@ -6,6 +6,7 @@ import { FilmGrain } from "@/components/mailscore/FilmGrain";
 import { LiveBackground } from "@/components/mailscore/LiveBackground";
 import { ScrollProgress } from "@/components/mailscore/ScrollProgress";
 import { MotionProvider } from "@/components/mailscore/MotionProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 function getSiteUrl(): URL {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* Page Content */}
           <div className="relative z-10">{children}</div>
         </MotionProvider>
+        <Analytics />
       </body>
     </html>
   );
