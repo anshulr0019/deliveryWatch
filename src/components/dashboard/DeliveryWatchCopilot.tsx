@@ -172,6 +172,9 @@ function parseError(error: unknown, fallback: string) {
 
 function statusMeta(status?: string, severity?: string) {
   const value = `${status ?? ""} ${severity ?? ""}`.toLowerCase();
+  if (status?.toLowerCase() === "unknown") {
+    return { label: "Unknown", badge: "border-slate-200 bg-slate-50 text-slate-600", icon: CircleDotDashed };
+  }
   if (value.includes("critical") || value.includes("fail") || value.includes("error")) {
     return { label: severity ?? status ?? "Critical", badge: "border-rose-200 bg-rose-50 text-rose-700", icon: XCircle };
   }
@@ -179,6 +182,10 @@ function statusMeta(status?: string, severity?: string) {
     return { label: severity ?? status ?? "Warning", badge: "border-amber-200 bg-amber-50 text-amber-800", icon: AlertTriangle };
   }
   return { label: severity ?? status ?? "Needs attention", badge: "border-sky-200 bg-sky-50 text-sky-700", icon: Info };
+}
+
+function isOpenInvestigation(investigation: Investigation) {
+  return (investigation.status ?? "open").toLowerCase() === "open";
 }
 
 function formatDate(value?: string) {
@@ -340,7 +347,9 @@ export function DeliveryWatchCopilot({ domainId, hasResult }: DeliveryWatchCopil
 
   const openInvestigation = async (finding: Finding) => {
     const key = findingKey(finding);
-    const existing = investigations.find((item) => item.findingId === key || item.findingKey === key);
+    const existing = investigations.find(
+      (item) => isOpenInvestigation(item) && (item.findingId === key || item.findingKey === key),
+    );
     if (existing) {
       setExpandedFinding((current) => (current === key ? null : key));
       return;
@@ -603,7 +612,9 @@ export function DeliveryWatchCopilot({ domainId, hasResult }: DeliveryWatchCopil
                       const key = findingKey(finding);
                       const meta = statusMeta(finding.status, finding.severity);
                       const StatusIcon = meta.icon;
-                      const investigation = investigations.find((item) => item.findingId === key || item.findingKey === key);
+                      const investigation = investigations.find(
+                        (item) => isOpenInvestigation(item) && (item.findingId === key || item.findingKey === key),
+                      );
                       const expanded = expandedFinding === key;
                       const references = finding.references ?? finding.sources ?? [];
                       return (
